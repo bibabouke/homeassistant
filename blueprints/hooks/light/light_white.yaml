@@ -599,7 +599,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{%- if state_attr(light,"hs_color")[0] < 345 or state_attr(light,"hs_color") == (0,0) -%} {{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }} {%- else -%} [0,0] {%- endif -%}'
+                          hs_color: '{%- if state_attr(light,"hs_color")[0] < 345 or state_attr(light,"hs_color") == (50,50) -%} {{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }} {%- else -%} [0,0] {%- endif -%}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
@@ -638,7 +638,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{%- if state_attr(light,"hs_color")[0] > 15 or state_attr(light,"hs_color") == (0,0) -%} {{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }} {%- else -%} [0,0] {%- endif -%}'
+                          hs_color: '{%- if state_attr(light,"hs_color")[0] > 15 or state_attr(light,"hs_color") == (50,50) -%} {{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }} {%- else -%} [0,0] {%- endif -%}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
