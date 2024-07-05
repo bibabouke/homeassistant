@@ -21,6 +21,7 @@ blueprint:
     ℹ️ Version 2023.10.30
     Includes fixes for button actions and space evaluation post 2023.5.0
     Includes fixes for button down hold actions [since 2023-06-11](https://community.home-assistant.io/t/zha-deconz-zigbee2mqtt-ikea-e2001-e2002-styrbar-remote-control-universal-blueprint-all-actions-double-click-events-control-lights-media-players-and-more-with-hooks/354176/109)
+    Includes fixes from LeidenSpain for adding white
   source_url: https://github.com/bibabouke/homeassistant/blob/main/blueprints/controllers/ikea_e2001_e2002/styrbar.yaml
   domain: automation
   input:
