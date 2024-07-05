@@ -581,7 +581,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }}'
+                          hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 5) % 360, 100] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
@@ -608,7 +608,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }}'
+                          hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 5) % 360, 100] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
