@@ -251,6 +251,7 @@ action:
       - conditions: '{{ event_data.command == brightness_up }}'
         sequence:
           - choose:
+              # if light is off and smooth power on is disabled, turn it on at the previously saved brightness
               - conditions: '{{ light_is_off and smooth_power_on }}'
                 sequence:
                   - service: light.turn_on
