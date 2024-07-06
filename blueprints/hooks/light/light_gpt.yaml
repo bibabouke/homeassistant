@@ -1,3 +1,4 @@
+# Blueprint metadata
 blueprint:
   name: Hook - Light
   description: |
@@ -52,6 +53,7 @@ blueprint:
             - Auto
             - Color Temperature
             - Hue - Saturation
+            - Hue - Saturation Colors
             - None
     light_transition:
       name: (Optional) Light Transition
@@ -143,7 +145,7 @@ variables:
   controller_model: !input controller_model
   # supported controllers and mappings
   controller_mapping:
-    "IKEA E2001/E2002 STYRBAR Remote control":
+  IKEA E2001/E2002 STYRBAR Remote control:
       turn_on: button_up_short
       brightness_up_repeat: button_up_long
       turn_off: button_down_short
@@ -152,7 +154,7 @@ variables:
       color_down_repeat: button_left_long
       color_up: button_right_short
       color_up_repeat: button_right_long
-    "IKEA E2001/E2002 STYRBAR Remote control (#2)":
+ IKEA E2001/E2002 STYRBAR Remote control (#2):
       brightness_up: button_up_short
       brightness_up_repeat: button_up_long
       turn_on: button_up_double
@@ -191,230 +193,168 @@ variables:
     Auto: auto
     Color Temperature: color_temp
     Hue - Saturation: hs_color
+    Hue - Saturation Colors: hs_colors
     None: none
   # extract light color mode id
   light_color_mode_id: >-
-    {%- if light_color_mode == "Auto" -%}
-      {% set supported_color_modes = state_attr(light, "supported_color_modes") -%}
-      {%- if "hs" in supported_color_modes or "xy" in supported_color_modes or "rgbw" in supported_color_modes or "rgbww" in supported_color_modes -%}
-        {{ color_modes["Hue - Saturation"] }}
-      {%- elif "color_temp" in supported_color_modes -%}
-        {{ color_modes["Color Temperature"] }}
-      {%- else -%}
-        {{ color_modes["None"] }}
-      {%- endif -%}
-    {%- else -%}
-      {{ color_modes[light_color_mode] }}
-    {%- endif -%}
-  step_short: '{{ (max_brightness-min_brightness)/brightness_steps_short }}'
-  step_long: '{{ (max_brightness-min_brightness)/brightness_steps_long }}'
-  turn_on_brightness: '{{ min_brightness if force_brightness else on_brightness }}'
+    {%- if light_color_mode == "Auto" -%} {% set supported_color_modes = state_attr(light, "supported_color_modes") -%} {%- if "hs" in supported_color_modes or "xy" in supported_color_modes or "rgbw" in supported_color_modes or "rgbww" in supported_color_modes -%} {{
+    color_modes["Hue - Saturation"] }} {%- elif "color_temp" in supported_color_modes -%} {{ color_modes["Color Temperature"] }} {%- else -%} {{ color_modes["None"] }} {%- endif -%} {%- else -%} {{ color_modes[light_color_mode] }} {%- endif -%}
+  predefined_colors:
+    - [0, 100]
+    - [60, 100]
+    - [120, 100]
+    - [180, 100]
+    - [240, 100]
+
 trigger:
-  - platform: state
-    entity_id: !input controller_entity
-    attribute: action
-mode: parallel
-max: 10
+  platform: event
+  event_type: zha_event
+  event_data:
+    device_id: !input controller_device
+
+condition: []
+
 action:
   - variables:
-      action: '{{ trigger.to_state.state }}'
+      action: '{{ trigger.event.data.command }}'
   - choose:
-      - conditions:
-          - '{{ action == toggle }}'
+      - conditions: '{{ action == toggle }}'
         sequence:
           - service: light.toggle
-            target:
-              entity_id: !input light
             data:
               transition: !input light_transition
-      - conditions:
-          - '{{ action == turn_on }}'
+            target:
+              entity_id: !input light
+      - conditions: '{{ action == turn_on }}'
         sequence:
           - service: light.turn_on
-            target:
-              entity_id: !input light
             data:
               transition: !input light_transition
-              brightness: '{{ turn_on_brightness }}'
-      - conditions:
-          - '{{ action == turn_off }}'
+              brightness: !input on_brightness
+            target:
+              entity_id: !input light
+      - conditions: '{{ action == turn_off }}'
         sequence:
           - service: light.turn_off
-            target:
-              entity_id: !input light
             data:
               transition: !input light_transition
-      - conditions:
-          - '{{ action == brightness_up }}'
-        sequence:
-          - service: light.turn_on
             target:
               entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_step: '{{ step_short }}'
-      - conditions:
-          - '{{ action == brightness_up_repeat }}'
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_step_pct: '{{ step_long }}'
-      - conditions:
-          - '{{ action == brightness_down }}'
+      - conditions: '{{ action == brightness_up }}'
         sequence:
           - choose:
-              - conditions:
-                  - '{{ states(light) == "off" and not smooth_power_off }}'
+              - conditions: '{{ states(light) == "off" and smooth_power_on }}'
                 sequence:
                   - service: light.turn_on
+                    data:
+                      brightness: 1
                     target:
                       entity_id: !input light
+              - conditions: '{{ states(light) == "on" }}'
+                sequence:
+                  - service: light.turn_on
                     data:
-                      transition: !input light_transition
-                      brightness: '{{ min_brightness }}'
-              - conditions:
-                  - '{{ states(light) == "off" and smooth_power_off }}'
+                      brightness_step: '{{ ((max_brightness - min_brightness) / brightness_steps_short) | round(0, "ceil") }}'
+                    target:
+                      entity_id: !input light
+      - conditions: '{{ action == brightness_down }}'
+        sequence:
+          - choose:
+              - conditions: '{{ states(light) == "on" }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      brightness_step: '-{{ ((max_brightness - min_brightness) / brightness_steps_short) | round(0, "ceil") }}'
+                    target:
+                      entity_id: !input light
+              - conditions: '{{ states(light) == "on" and smooth_power_off }}'
                 sequence:
                   - service: light.turn_off
                     target:
                       entity_id: !input light
-                    data:
-                      transition: !input light_transition
-              - conditions:
-                  - '{{ states(light) == "on" }}'
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input light
-                    data:
-                      transition: !input light_transition
-                      brightness_step: -'{{ step_short }}'
-      - conditions:
-          - '{{ action == brightness_down_repeat }}'
+      - conditions: '{{ action == brightness_up_repeat }}'
         sequence:
           - choose:
-              - conditions:
-                  - '{{ states(light) == "off" and not smooth_power_off }}'
+              - conditions: '{{ states(light) == "off" and smooth_power_on }}'
                 sequence:
                   - service: light.turn_on
+                    data:
+                      brightness: 1
                     target:
                       entity_id: !input light
+              - conditions: '{{ states(light) == "on" }}'
+                sequence:
+                  - service: light.turn_on
                     data:
-                      transition: !input light_transition
-                      brightness: '{{ min_brightness }}'
-              - conditions:
-                  - '{{ states(light) == "off" and smooth_power_off }}'
+                      brightness_step: '{{ ((max_brightness - min_brightness) / brightness_steps_long) | round(0, "ceil") }}'
+                    target:
+                      entity_id: !input light
+      - conditions: '{{ action == brightness_down_repeat }}'
+        sequence:
+          - choose:
+              - conditions: '{{ states(light) == "on" }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      brightness_step: '-{{ ((max_brightness - min_brightness) / brightness_steps_long) | round(0, "ceil") }}'
+                    target:
+                      entity_id: !input light
+              - conditions: '{{ states(light) == "on" and smooth_power_off }}'
                 sequence:
                   - service: light.turn_off
                     target:
                       entity_id: !input light
-                    data:
-                      transition: !input light_transition
-              - conditions:
-                  - '{{ states(light) == "on" }}'
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input light
-                    data:
-                      transition: !input light_transition
-                      brightness_step_pct: -'{{ step_long }}'
-      - conditions:
-          - '{{ action == color_up }}'
+      - conditions: '{{ action == color_up and light_color_mode_id != "none" }}'
         sequence:
           - choose:
-              - conditions:
-                  - '{{ light_color_mode_id == "color_temp" }}'
+              - conditions: '{{ light_color_mode_id == "color_temp" }}'
                 sequence:
                   - service: light.turn_on
-                    target:
-                      entity_id: !input light
                     data:
-                      transition: !input light_transition
-                      color_temp_step_pct: 100
-              - conditions:
-                  - '{{ light_color_mode_id == "hs_color" }}'
+                      color_temp: '{{ state_attr(light,"color_temp")|int + 50 }}'
+                      transition: 0.25
+                    entity_id: !input light
+              - conditions: '{{ light_color_mode_id == "hs_color" }}'
                 sequence:
                   - service: light.turn_on
-                    target:
-                      entity_id: !input light
                     data:
-                      transition: !input light_transition
-                      hs_color:
-                        - 360
-                        - 100
-      - conditions:
-          - '{{ action == color_up_repeat }}'
+                      hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }}'
+                      transition: 0.25
+                    entity_id: !input light
+              - conditions: '{{ light_color_mode_id == "hs_colors" }}'
+                sequence:
+                  - variables:
+                      current_color: '{{ state_attr(light,"hs_color")[0] or 0 }}'
+                      next_color: '{{ (predefined_colors.index([current_color, 100]) + 1) % predefined_colors | length }}'
+                  - service: light.turn_on
+                    data:
+                      hs_color: '{{ predefined_colors[next_color] }}'
+                      transition: 0.25
+                    entity_id: !input light
+      - conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
         sequence:
           - choose:
-              - conditions:
-                  - '{{ light_color_mode_id == "color_temp" }}'
+              - conditions: '{{ light_color_mode_id == "color_temp" }}'
                 sequence:
                   - service: light.turn_on
-                    target:
-                      entity_id: !input light
                     data:
-                      transition: !input light_transition
-                      color_temp_step_pct: 100
-              - conditions:
-                  - '{{ light_color_mode_id == "hs_color" }}'
+                      color_temp: '{{ state_attr(light,"color_temp")|int - 50 }}'
+                      transition: 0.25
+                    entity_id: !input light
+              - conditions: '{{ light_color_mode_id == "hs_color" }}'
                 sequence:
                   - service: light.turn_on
-                    target:
-                      entity_id: !input light
                     data:
-                      transition: !input light_transition
-                      hs_color:
-                        - 360
-                        - 100
-      - conditions:
-          - '{{ action == color_down }}'
-        sequence:
-          - choose:
-              - conditions:
-                  - '{{ light_color_mode_id == "color_temp" }}'
+                      hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }}'
+                      transition: 0.25
+                    entity_id: !input light
+              - conditions: '{{ light_color_mode_id == "hs_colors" }}'
                 sequence:
+                  - variables:
+                      current_color: '{{ state_attr(light,"hs_color")[0] or 0 }}'
+                      next_color: '{{ (predefined_colors.index([current_color, 100]) - 1) % predefined_colors | length }}'
                   - service: light.turn_on
-                    target:
-                      entity_id: !input light
                     data:
-                      transition: !input light_transition
-                      color_temp_step_pct: 0
-              - conditions:
-                  - '{{ light_color_mode_id == "hs_color" }}'
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input light
-                    data:
-                      transition: !input light_transition
-                      hs_color:
-                        - 0
-                        - 0
-      - conditions:
-          - '{{ action == color_down_repeat }}'
-        sequence:
-          - choose:
-              - conditions:
-                  - '{{ light_color_mode_id == "color_temp" }}'
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input light
-                    data:
-                      transition: !input light_transition
-                      color_temp_step_pct: 0
-              - conditions:
-                  - '{{ light_color_mode_id == "hs_color" }}'
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input light
-                    data:
-                      transition: !input light_transition
-                      hs_color:
-                        - 0
-                        - 0
+                      hs_color: '{{ predefined_colors[next_color] }}'
+                      transition: 0.25
+                    entity_id: !input light
