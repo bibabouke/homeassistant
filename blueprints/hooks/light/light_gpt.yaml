@@ -259,7 +259,7 @@ action:
                     data:
                       brightness: '{{ min_brightness }}'
                       transition: '{{ light_transition }}'
-        default:
+          default:
             - service: light.turn_on
               target:
                 entity_id: '{{ light }}'
