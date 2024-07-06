@@ -79,9 +79,6 @@ variables:
   brightness_steps_short: !input brightness_steps_short
   brightness_steps_long: !input brightness_steps_long
   light_transition: !input light_transition
-  light_color_mode_id: >
-    {%- if light_color_mode == "none" -%} none
-    {%- else -%} {{ color_modes[light_color_mode] }} {%- endif -%}
   light_state: '{{ states(light) }}'
   is_light_on: '{{ light_state == "on" }}'
   brightness_step_short: '{{ (max_brightness - min_brightness) / brightness_steps_short }}'
@@ -254,7 +251,7 @@ action:
                 sequence:
                   - service: light.turn_on
                     data:
-                      color_temp: '{{ state_attr(light,"min_mireds") + (state_attr(light,"max_mireds") - state_attr(light,"min_mireds")) / 5 * (trigger.event.data.action_value | int) }}'
+                      color_temp: '{{ state_attr(light, "min_mireds") + (state_attr(light, "max_mireds") - state_attr(light, "min_mireds")) / 5 * (trigger.event.data.action_value | int) }}'
                     target:
                       entity_id: !input light
 mode: restart
