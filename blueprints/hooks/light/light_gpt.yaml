@@ -54,16 +54,16 @@ blueprint:
             - Color Temperature
             - Hue - Saturation
             - None
-variables:
-  predefined_colors:
-    - [0, 100]      # Rood
-    - [30, 100]     # Oranje
-    - [60, 100]     # Geel
-    - [120, 100]    # Groen
-    - [180, 100]    # Cyan
-    - [240, 100]    # Blauw
-    - [300, 100]    # Magenta
-    # Voeg hier meer kleuren toe
+    variables:
+      predefined_colors:
+        - [0, 100]      # Rood
+        - [30, 100]     # Oranje
+        - [60, 100]     # Geel
+        - [120, 100]    # Groen
+        - [180, 100]    # Cyan
+        - [240, 100]    # Blauw
+        - [300, 100]    # Magenta
+        # Voeg hier meer kleuren toe
     light_transition:
       name: (Optional) Light Transition
       description: Number that represents the time (in milliseconds) the light should take turn on or off, if the light supports it.
