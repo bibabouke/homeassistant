@@ -6,10 +6,6 @@ blueprint:
 
     Hook automation which allows to control a light. Supports brightness and color control both for white temperature and rgb lights. Features may vary depending on the selected Controller.
 
-    An automation created with this blueprint must be linked to a [Controller](https://epmatt.github.io/awesome-ha-blueprints/blueprints/controllers) automation.
-    Controllers are blueprints which allow to easily integrate a wide range of controllers (wall switches, remotes, dimmers, etc.) and use them to run a set of actions when interacting with them.
-    They expose an abstract interface used by Hooks to create controller-based automations.
-
     A list of controllers supported by this hook is available [here](https://epmatt.github.io/awesome-ha-blueprints/docs/blueprints/hooks/light#supported-controllers).
 
     📕 Full documentation regarding this blueprint is available [here](https://github.com/lsismeiro/awesome-ha-blueprints/blob/main/website/docs/blueprints/hooks/light.mdx).
