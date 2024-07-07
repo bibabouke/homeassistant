@@ -387,7 +387,7 @@ action:
                     - delay:
                         milliseconds: 250
            #GPT
-		   - conditions: '{{ action == color_up and light_color_mode_id != "none" }}'
+	   - conditions: '{{ action == color_up and light_color_mode_id != "none" }}'
         sequence:
           choose:
             - conditions: '{{ light_color_mode_id == "color_temp" }}'
