@@ -404,6 +404,65 @@ action:
                           [340, 100], [320, 100], [300, 100], [280, 100],
                           [240, 100], [210, 100], [120, 100], [60, 100]
                         ] %}
+                        {% set current_hue = state_attr(!input light, "hs_color")[0] or 0 %}
+                        {% set next_index = (colors | map(attribute=0) | list).index(current_hue) + 1 %}
+                        {% if next_index >= colors | length %}
+                          {% set next_index = 0 %}
+                        {% endif %}
+                        {{ colors[next_index] }}
+                      transition: 0.25
+                    entity_id: !input light
+                  - delay:
+                      milliseconds: 250
+
+  - conditions: '{{ action == color_down_repeat and light_color_mode_id != "none" }}'
+    sequence:
+      choose:
+        - conditions: '{{ light_color_mode_id == "hs_color" }}'
+          sequence:
+            - repeat:
+                while: '{{ true }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      hs_color: >
+                        {% set colors = [
+                          [240, 100], [220, 100], [200, 100], [50, 100],
+                          [35, 100], [30, 100], [20, 100], [30, 100],
+                          [25, 100], [20, 100], [10, 100], [0, 100],
+                          [340, 100], [320, 100], [300, 100], [280, 100],
+                          [240, 100], [210, 100], [120, 100], [60, 100]
+                        ] %}
+                        {% set current_hue = state_attr(!input light, "hs_color")[0] or 0 %}
+                        {% set prev_index = (colors | map(attribute=0) | list).index(current_hue) - 1 %}
+                        {% if prev_index < 0 %}
+                          {% set prev_index = colors | length - 1 %}
+                        {% endif %}
+                        {{ colors[prev_index] }}
+                      transition: 0.25
+                    entity_id: !input light
+                  - delay:
+                      milliseconds: 250
+
+
+      
+    sequence:
+      choose:
+        - conditions: '{{ light_color_mode_id == "hs_color" }}'
+          sequence:
+            - repeat:
+                while: '{{ true }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      hs_color: >
+                        {% set colors = [
+                          [240, 100], [220, 100], [200, 100], [50, 100],
+                          [35, 100], [30, 100], [20, 100], [30, 100],
+                          [25, 100], [20, 100], [10, 100], [0, 100],
+                          [340, 100], [320, 100], [300, 100], [280, 100],
+                          [240, 100], [210, 100], [120, 100], [60, 100]
+                        ] %}
                         {% set current_hue = state_attr(light, "hs_color")[0] or 0 %}
                         {% set next_color = colors[(colors | map(attribute=0) | list).index(current_hue) + 1 % colors | length] %}
                         {{ next_color }}
@@ -437,4 +496,3 @@ action:
                     entity_id: !input light
                   - delay:
                       milliseconds: 250
- 
