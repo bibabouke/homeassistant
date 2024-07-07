@@ -420,7 +420,7 @@ action:
                         entity_id: !input light
                       - delay:
                           milliseconds: 250
-- conditions: '{{ light_color_mode_id == "hs_color" }}'
+      - conditions: '{{ light_color_mode_id == "hs_color" }}'
   sequence:
     - repeat:
         while: '{{ true }}'
@@ -448,7 +448,7 @@ action:
                         entity_id: !input light
                       - delay:
                           milliseconds: 250
-- conditions: '{{ light_color_mode_id == "hs_color" }}'
+      - conditions: '{{ light_color_mode_id == "hs_color" }}'
   sequence:
     - repeat:
         while: '{{ true }}'
