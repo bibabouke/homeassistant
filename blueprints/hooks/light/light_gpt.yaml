@@ -445,7 +445,8 @@ action:
                     sequence:
                       - variables:
                           current_color: '{{ state_attr(light, "hs_color") }}'
-                          current_index: '{{ color_list.index(current_color) if current_color in color_list else 0 }}'
+                          rounded_current_color: '{{ [(current_color[0] | round(0)), (current_color[1] | round(0))] }}'
+                          current_index: '{{ color_list.index(rounded_current_color) if rounded_current_color in color_list else 0 }}'
                           next_index: '{{ (current_index + 1) % 5 }}'
                       - service: light.turn_on
                         data:
@@ -478,7 +479,8 @@ action:
                     sequence:
                       - variables:
                           current_color: '{{ state_attr(light, "hs_color") }}'
-                          current_index: '{{ color_list.index(current_color) if current_color in color_list else 0 }}'
+                          rounded_current_color: '{{ [(current_color[0] | round(0)), (current_color[1] | round(0))] }}'
+                          current_index: '{{ color_list.index(rounded_current_color) if rounded_current_color in color_list else 0 }}'
                           previous_index: '{{ (current_index - 1) % 5 }}'
                       - service: light.turn_on
                         data:
