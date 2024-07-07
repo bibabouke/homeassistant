@@ -54,16 +54,6 @@ blueprint:
             - Color Temperature
             - Hue - Saturation
             - None
-    variables:
-      predefined_colors:
-        - [0, 100]      # Rood
-        - [30, 100]     # Oranje
-        - [60, 100]     # Geel
-        - [120, 100]    # Groen
-        - [180, 100]    # Cyan
-        - [240, 100]    # Blauw
-        - [300, 100]    # Magenta
-        # Voeg hier meer kleuren toe
     light_transition:
       name: (Optional) Light Transition
       description: Number that represents the time (in milliseconds) the light should take turn on or off, if the light supports it.
@@ -377,91 +367,48 @@ action:
                         entity_id: !input light
                     - delay:
                         milliseconds: 250
+                        
       - conditions: '{{ action == color_up and light_color_mode_id != "none" }}'
+  sequence:
+    choose:
+      - conditions: '{{ light_color_mode_id == "color_temp" }}'
         sequence:
-          choose:
-            - conditions: '{{ light_color_mode_id == "color_temp" }}'
-              sequence:
-                - service: light.turn_on
-                  data:
-                    color_temp: '{{ state_attr(light,"color_temp")|int + 50 }}'
-                    transition: 0.25
-                  entity_id: !input light
-            - conditions: '{{ light_color_mode_id == "hs_color" }}'
-              sequence:
-                - service: light.turn_on
-                  data:
-                    hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }}'
-                    transition: 0.25
-                  entity_id: !input light
-      - conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
+          - service: light.turn_on
+            data:
+              color_temp: '{{ state_attr(light,"color_temp")|int + 50 }}'
+              transition: 0.25
+            entity_id: !input light
+      - conditions: '{{ light_color_mode_id == "hs_color" }}'
         sequence:
-          choose:
-            - conditions: '{{ light_color_mode_id == "color_temp" }}'
-              sequence:
-                - service: light.turn_on
-                  data:
-                    color_temp: '{{ [state_attr(light,"color_temp")|int - 50, 1]|max }}'
-                    transition: 0.25
-                  entity_id: !input light
-            - conditions: '{{ light_color_mode_id == "hs_color" }}'
-              sequence:
-                - service: light.turn_on
-                  data:
-                    hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }}'
-                    transition: 0.25
-                  entity_id: !input light
-      - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
+          - service: light.turn_on
+            data:
+              hs_color: >-
+                {% set current_hue = state_attr(light,"hs_color")[0] or 0 %}
+                {% set current_index = predefined_colors | selectattr('0', 'eq', current_hue) | list | first %}
+                {% set new_index = (predefined_colors.index(current_index) + 1) % predefined_colors | length %}
+                {{ predefined_colors[new_index] }}
+              transition: 0.25
+            entity_id: !input light
+- conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
+  sequence:
+    choose:
+      - conditions: '{{ light_color_mode_id == "color_temp" }}'
         sequence:
-          choose:
-            - conditions: '{{ light_color_mode_id == "color_temp" }}'
-              sequence:
-                - repeat:
-                    while: '{{ true }}'
-                    sequence:
-                      - service: light.turn_on
-                        data:
-                          color_temp: '{{ state_attr(light,"color_temp")|int + 50 }}'
-                          transition: 0.25
-                        entity_id: !input light
-                      - delay:
-                          milliseconds: 250
-            - conditions: '{{ light_color_mode_id == "hs_color" }}'
-              sequence:
-                - repeat:
-                    while: '{{ true }}'
-                    sequence:
-                      - service: light.turn_on
-                        data:
-                          hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }}'
-                          transition: 0.25
-                        entity_id: !input light
-                      - delay:
-                          milliseconds: 250
-      - conditions: '{{ action == color_down_repeat and light_color_mode_id != "none" }}'
+          - service: light.turn_on
+            data:
+              color_temp: '{{ [state_attr(light,"color_temp")|int - 50, 1]|max }}'
+              transition: 0.25
+            entity_id: !input light
+      - conditions: '{{ light_color_mode_id == "hs_color" }}'
         sequence:
-          choose:
-            - conditions: '{{ light_color_mode_id == "color_temp" }}'
-              sequence:
-                - repeat:
-                    while: '{{ true }}'
-                    sequence:
-                      - service: light.turn_on
-                        data:
-                          color_temp: '{{ [state_attr(light,"color_temp")|int - 50, 1]|max }}'
-                          transition: 0.25
-                        entity_id: !input light
-                      - delay:
-                          milliseconds: 250
-            - conditions: '{{ light_color_mode_id == "hs_color" }}'
-              sequence:
-                - repeat:
-                    while: '{{ true }}'
-                    sequence:
-                      - service: light.turn_on
-                        data:
-                          hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }}'
-                          transition: 0.25
-                        entity_id: !input light
+          - service: light.turn_on
+            data:
+              hs_color: >-
+                {% set current_hue = state_attr(light,"hs_color")[0] or 0 %}
+                {% set current_index = predefined_colors | selectattr('0', 'eq', current_hue) | list | first %}
+                {% set new_index = (predefined_colors.index(current_index) - 1) % predefined_colors | length %}
+                {{ predefined_colors[new_index] }}
+              transition: 0.25
+            entity_id: !input light
                       - delay:
                           milliseconds: 250
