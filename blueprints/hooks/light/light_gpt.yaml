@@ -140,6 +140,20 @@ blueprint:
         boolean:
 # Automation schema
 variables:
+  predefined_colors: 
+    - [0, 100]    # Red
+    - [30, 100]   # Orange
+    - [60, 100]   # Yellow
+    - [90, 100]   # Lime
+    - [120, 100]  # Green
+    - [150, 100]  # Turquoise
+    - [180, 100]  # Cyan
+    - [210, 100]  # Ocean
+    - [240, 100]  # Blue
+    - [270, 100]  # Purple
+    - [300, 100]  # Magenta
+    - [330, 100]  # Pink
+    # ... Add more predefined colors as needed
   # convert blueprint inputs into variables to be used in templates
   controller_model: !input controller_model
   # supported controllers and mappings
