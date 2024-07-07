@@ -385,7 +385,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: '{%- set colors = [[0, 100], [120, 100], [0, 0]] -%} {%- set current_color = state_attr(light, "hs_color") -%} {%- if current_color == colors[0] -%} {{ colors[1] }} {%- elif current_color == colors[1] -%} {{ colors[2] }} {%- endif -%}'
+                    hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
@@ -402,7 +402,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: '{%- set colors = [[0, 100], [120, 100], [0, 0]] -%} {%- set current_color = state_attr(light, "hs_color") -%} {%- if current_color == colors[0] -%} {{ colors[1] }} {%- elif current_color == colors[1] -%} {{ colors[2] }} {%- endif -%}'
+                    hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
@@ -420,18 +420,19 @@ action:
                         entity_id: !input light
                       - delay:
                           milliseconds: 250
-            - conditions: '{{ light_color_mode_id == "hs_color" }}'
-              sequence:
-                - repeat:
-                    while: '{{ true }}'
-                    sequence:
-                      - service: light.turn_on
-                        data:
-                          hs_color: '{%- set colors = [[0, 100], [120, 100], [0, 0]] -%} {%- set current_color = state_attr(light, "hs_color") -%} {%- if current_color == colors[0] -%} {{ colors[1] }} {%- elif current_color == colors[1] -%} {{ colors[2] }} {%- endif -%}'
-                          transition: 0.25
-                        entity_id: !input light
-                      - delay:
-                          milliseconds: 250
+- conditions: '{{ light_color_mode_id == "hs_color" }}'
+  sequence:
+    - repeat:
+        while: '{{ true }}'
+        sequence:
+          - service: light.turn_on
+            data:
+              hs_color: '{{ cycle([[0, 0], [0, 100], [240, 100], [300, 100]], repeat.index % 4) }}'
+              transition: 0.25
+            entity_id: !input light
+          - delay:
+              milliseconds: 250
+
       - conditions: '{{ action == color_down_repeat and light_color_mode_id != "none" }}'
         sequence:
           choose:
@@ -447,15 +448,15 @@ action:
                         entity_id: !input light
                       - delay:
                           milliseconds: 250
-            - conditions: '{{ light_color_mode_id == "hs_color" }}'
-              sequence:
-                - repeat:
-                    while: '{{ true }}'
-                    sequence:
-                      - service: light.turn_on
-                        data:
-                          hs_color: '{%- set colors = [[0, 100], [120, 100], [0, 0]] -%} {%- set current_color = state_attr(light, "hs_color") -%} {%- if current_color == colors[0] -%} {{ colors[1] }} {%- elif current_color == colors[1] -%} {{ colors[2] }} {%- endif -%}'
-                          transition: 0.25
-                        entity_id: !input light
-                      - delay:
-                          milliseconds: 250
+- conditions: '{{ light_color_mode_id == "hs_color" }}'
+  sequence:
+    - repeat:
+        while: '{{ true }}'
+        sequence:
+          - service: light.turn_on
+            data:
+              hs_color: '{{ cycle([[0, 0], [0, 100], [240, 100], [300, 100]], repeat.index % 4) }}'
+              transition: 0.25
+            entity_id: !input light
+          - delay:
+              milliseconds: 250
