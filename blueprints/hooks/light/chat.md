@@ -5,3 +5,21 @@ Ik wil alleen 1 klein detail veranderen. Nu werken de kleuren voor de HUE - SATU
 Waar in de code zou jij dat veranderen en hoe zou je dat doen. Kies een zo klein mogelijke oplossing, die logisch is en waar later de kleurcodes makkelijk in aan te passen zijn. Geef een suggestie waar in de code je dat zou aanpassen en hoe.
 
 Begin de aanpassing met een line by line analyse van mijn code. Gevolgd door opmerkingen waar de hue kleuren nu bepaald worden en wat dat in de huidige code betekent. En pas daarna jouw suggestie verwerken in mijn code, zodat ik die direct kan overnemen. 
+
+
+
+IKEA kleurindeling (20):
+
+
+Witte tinten
+Koude hemel – 6000 Kelvin
+Koud daglicht – 5000 Kelvin
+Koudwit – 4000 Kelvin
+Zonsopgang – 3000 Kelvin
+Warmwit – 2700 Kelvin
+Warm schijnsel – 2200 Kelvin
+Kaarslicht – 1780 Kelvin
+Kleuren
+Barnsteen, Perzik, Donkerperzik, Donkerrood, Roze,
+Lichtroze, Donkerroze, Lichtpaars, Donkerpaars, Blauw,
+Lichtblauw, Lime, Geel
