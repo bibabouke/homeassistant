@@ -399,9 +399,15 @@ action:
                   entity_id: !input light
             - conditions: '{{ light_color_mode_id == "hs_color" }}'
               sequence:
+                - variables:
+                    color_list: [[0, 0], [30, 100], [0, 100], [120, 100], [240, 100]]
+                    current_color: '{{ state_attr(light, "hs_color") }}'
+                    rounded_current_color: '{{ [(current_color[0] | round(0)), (current_color[1] | round(0))] }}'
+                    current_index: '{{ color_list.index(rounded_current_color) if rounded_current_color in color_list else 0 }}'
+                    next_index: '{{ (current_index + 1) % 5 }}'
                 - service: light.turn_on
                   data:
-                    hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) + 15) % 360, 100] }}'
+                    hs_color: '{{ color_list[next_index] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
@@ -416,9 +422,15 @@ action:
                   entity_id: !input light
             - conditions: '{{ light_color_mode_id == "hs_color" }}'
               sequence:
+                - variables:
+                    color_list: [[0, 0], [30, 100], [0, 100], [120, 100], [240, 100]]
+                    current_color: '{{ state_attr(light, "hs_color") }}'
+                    rounded_current_color: '{{ [(current_color[0] | round(0)), (current_color[1] | round(0))] }}'
+                    current_index: '{{ color_list.index(rounded_current_color) if rounded_current_color in color_list else 0 }}'
+                    previous_index: '{{ (current_index - 1) % 5 }}'
                 - service: light.turn_on
                   data:
-                    hs_color: '{{ [((state_attr(light,"hs_color")[0] or 0) - 15) % 360, 100] }}'
+                    hs_color: '{{ color_list[previous_index] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
