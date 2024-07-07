@@ -421,7 +421,7 @@ action:
                     transition: 0.25
                   entity_id: !input light
       #Repeat GPT stuk
-  - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
+      - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
     sequence:
       choose:
         - conditions: '{{ light_color_mode_id == "hs_color" }}'
