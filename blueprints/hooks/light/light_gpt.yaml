@@ -387,7 +387,7 @@ action:
                     - delay:
                         milliseconds: 250
            #GPT
-		   - conditions: '{{ action == color_up and light_color_mode_id != "none" }}'
+      - conditions: '{{ action == color_up and light_color_mode_id != "none" }}'
         sequence:
           choose:
             - conditions: '{{ light_color_mode_id == "color_temp" }}'
@@ -445,7 +445,7 @@ action:
                     sequence:
                       - variables:
                           current_color: '{{ state_attr(light, "hs_color") }}'
-                          current_index: '{{ (color_list | selectattr("==", "current_color") | list | length) - 1 if current_color in color_list else 0 }}'
+                          current_index: '{{ color_list.index(current_color) if current_color in color_list else 0 }}'
                           next_index: '{{ (current_index + 1) % 5 }}'
                       - service: light.turn_on
                         data:
@@ -478,7 +478,7 @@ action:
                     sequence:
                       - variables:
                           current_color: '{{ state_attr(light, "hs_color") }}'
-                          current_index: '{{ (color_list | selectattr("==", "current_color") | list | length) - 1 if current_color in color_list else 0 }}'
+                          current_index: '{{ color_list.index(current_color) if current_color in color_list else 0 }}'
                           previous_index: '{{ (current_index - 1) % 5 }}'
                       - service: light.turn_on
                         data:
@@ -487,4 +487,3 @@ action:
                         entity_id: !input light
                       - delay:
                           milliseconds: 250
-		  
