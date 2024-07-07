@@ -6,6 +6,10 @@ blueprint:
 
     Hook automation which allows to control a light. Supports brightness and color control both for white temperature and rgb lights. Features may vary depending on the selected Controller.
 
+    An automation created with this blueprint must be linked to a [Controller](https://epmatt.github.io/awesome-ha-blueprints/blueprints/controllers) automation.
+    Controllers are blueprints which allow to easily integrate a wide range of controllers (wall switches, remotes, dimmers, etc.) and use them to run a set of actions when interacting with them.
+    They expose an abstract interface used by Hooks to create controller-based automations.
+
     A list of controllers supported by this hook is available [here](https://epmatt.github.io/awesome-ha-blueprints/docs/blueprints/hooks/light#supported-controllers).
 
     📕 Full documentation regarding this blueprint is available [here](https://github.com/lsismeiro/awesome-ha-blueprints/blob/main/website/docs/blueprints/hooks/light.mdx).
@@ -21,7 +25,7 @@ blueprint:
       description: The controller device which will control the Light. Choose a value only if the integration used to connect the controller to Home Assistant exposes it as a Device. This value should match the one specified in the corresponding Controller automation.
       default: ''
       selector:
-        device: {}
+        device:
     controller_entity:
       name: (Required) Controller Entity
       description: The controller entity which will control the Light. Choose a value only if the integration used to connect the controller to Home Assistant exposes it as an Entity. This value should match the one specified in the corresponding Controller automation.
@@ -35,8 +39,10 @@ blueprint:
       selector:
         select:
           options:
+            - IKEA E1524/E1810 TRÅDFRI Wireless 5-Button Remote            
             - IKEA E2001/E2002 STYRBAR Remote control
             - IKEA E2001/E2002 STYRBAR Remote control (#2)            
+            - Xiaomi WXKG11LM Aqara Wireless Switch Mini
     light:
       name: (Required) Light
       description: Light which will be controlled with this automation.
@@ -114,7 +120,7 @@ blueprint:
       description: Force brightness to the "On brightness" input value, when the light is being turned on.
       default: false
       selector:
-        boolean: {}
+        boolean:
     on_brightness:
       name: (Optional) On brightness
       description: Brightness value to force when turning on the light
@@ -131,33 +137,29 @@ blueprint:
       description: Force the light to turn on at minimum brightness when a brightness up command (single or continuous) is triggered and light is off.
       default: true
       selector:
-        boolean: {}
+        boolean:
     smooth_power_off:
       name: (Optional) Smooth power off
       description: Allow a brightness down command (single or continuous) to turn off the light when at minimum brightness. Disabling this will prevent the light from being turned off by brightness down commands.
       default: true
       selector:
-        boolean: {}
+        boolean:
 # Automation schema
 variables:
-  predefined_colors: 
-    - [0, 100]    # Red
-    - [30, 100]   # Orange
-    - [60, 100]   # Yellow
-    - [90, 100]   # Lime
-    - [120, 100]  # Green
-    - [150, 100]  # Turquoise
-    - [180, 100]  # Cyan
-    - [210, 100]  # Ocean
-    - [240, 100]  # Blue
-    - [270, 100]  # Purple
-    - [300, 100]  # Magenta
-    - [330, 100]  # Pink
-    # ... Add more predefined colors as needed
   # convert blueprint inputs into variables to be used in templates
   controller_model: !input controller_model
   # supported controllers and mappings
   controller_mapping:
+    IKEA E1524/E1810 TRÅDFRI Wireless 5-Button Remote:
+      brightness_up: button_up_short
+      brightness_up_repeat: button_up_long
+      brightness_down: button_down_short
+      brightness_down_repeat: button_down_long
+      color_down: button_left_short
+      color_down_repeat: button_left_long
+      color_up: button_right_short
+      color_up_repeat: button_right_long
+      toggle: button_center_short    
     IKEA E2001/E2002 STYRBAR Remote control:
       turn_on: button_up_short
       brightness_up_repeat: button_up_long
@@ -178,6 +180,9 @@ variables:
       color_down_repeat: button_left_long
       color_up: button_right_short
       color_up_repeat: button_right_long
+    Xiaomi WXKG11LM Aqara Wireless Switch Mini:
+      toggle: button_short
+      color_up: button_double
   # pre-choose actions for buttons based on configured controller
   # no need to perform this task at automation runtime
   brightness_up: '{{ controller_mapping[controller_model]["brightness_up"] | default(None) }}'
@@ -202,174 +207,234 @@ variables:
   on_brightness: !input on_brightness
   smooth_power_on: !input smooth_power_on
   smooth_power_off: !input smooth_power_off
-  event_light_color_mode: >
-    {% if light_color_mode == "Auto" %}
-      {{ state_attr(light, "color_mode") }}
-    {% elif light_color_mode == "Color Temperature" %}
-      color_temp
-    {% elif light_color_mode == "Hue - Saturation" %}
-      hs
-    {% elif light_color_mode == "None" %}
-      none
-    {% else %}
-      {{ state_attr(light, "color_mode") }}
-    {% endif %}
+  color_modes:
+    Auto: auto
+    Color Temperature: color_temp
+    Hue - Saturation: hs_color
+    None: none
+  # extract light color mode id
+  light_color_mode_id: >-
+    {%- if light_color_mode == "Auto" -%} {% set supported_color_modes = state_attr(light, "supported_color_modes") -%} {%- if "hs" in supported_color_modes or "xy" in supported_color_modes or "rgbw" in supported_color_modes or "rgbww" in supported_color_modes -%} {{
+    color_modes["Hue - Saturation"] }} {%- elif "color_temp" in supported_color_modes -%} {{ color_modes["Color Temperature"] }} {%- else -%} {{ color_modes["None"] }} {%- endif -%} {%- else -%} {{ color_modes[light_color_mode] }} {%- endif -%}
+  step_short: '{{ (max_brightness-min_brightness)/brightness_steps_short }}'
+  step_long: '{{ (max_brightness-min_brightness)/brightness_steps_long }}'
+mode: restart
+max_exceeded: silent
 trigger:
-  platform: event
-  event_type: zha_event
-  event_data:
-    device_ieee: !input controller_device
+  - platform: event
+    event_type: ahb_controller_event
+    event_data:
+      controller: !input controller_device
+  - platform: event
+    event_type: ahb_controller_event
+    event_data:
+      controller: !input controller_entity
+condition: []
 action:
+  - variables:
+      action: '{{ trigger.event.data.action }}'
   - choose:
-      - conditions: "{{ turn_on != none and trigger.event.data.command == turn_on }}"
+      - conditions: '{{ action == toggle }}'
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_pct: "{{ on_brightness }}"
-      - conditions: "{{ turn_off != none and trigger.event.data.command == turn_off }}"
+          - choose:
+              - conditions: '{{ force_brightness }}'
+                sequence:
+                  - service: light.toggle
+                    entity_id: !input light
+                    data:
+                      brightness: !input on_brightness
+                      transition: '{{ light_transition / 1000 }}'
+            default:
+              - service: light.toggle
+                entity_id: !input light
+                data:
+                  transition: '{{ light_transition / 1000 }}'
+      - conditions: '{{ action == turn_on }}'
+        sequence:
+          - choose:
+              - conditions: '{{ force_brightness }}'
+                sequence:
+                  - service: light.turn_on
+                    entity_id: !input light
+                    data:
+                      brightness: !input on_brightness
+                      transition: '{{ light_transition / 1000 }}'
+            default:
+              - service: light.turn_on
+                entity_id: !input light
+                data:
+                  transition: '{{ light_transition / 1000 }}'
+      - conditions: '{{ action == turn_off }}'
         sequence:
           - service: light.turn_off
-            target:
-              entity_id: !input light
+            entity_id: !input light
             data:
-              transition: !input light_transition
-      - conditions: "{{ brightness_up != none and trigger.event.data.command == brightness_up }}"
+              transition: '{{ light_transition / 1000 }}'
+      - conditions: '{{ action == brightness_up }}'
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_step_pct: "{{ brightness_steps_short }}"
-      - conditions: "{{ brightness_up_repeat != none and trigger.event.data.command == brightness_up_repeat }}"
+          - choose:
+              # if light is off and smooth power on is disabled, turn it on at the previously saved brightness
+              - conditions: '{{ states(light) == "off" and not smooth_power_on}}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      transition: '{{ light_transition / 1000 }}'
+                      entity_id: !input light
+              # if light is off and smooth power on is enabled, turn it on at minimum brightness
+              - conditions: '{{ states(light) == "off" and smooth_power_on}}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      brightness: '{{ min_brightness }}'
+                      transition: '{{ light_transition / 1000 }}'
+                      entity_id: !input light
+            # else the light is on, hence increase its brightness
+            default:
+              - service: light.turn_on
+                data:
+                  brightness: '{{ [ [state_attr(light,"brightness")+step_short, min_brightness] | max, max_brightness] | min }}'
+                  transition: 0.25
+                  entity_id: !input light
+      - conditions: '{{ action == brightness_down and states(light) == "on" }}'
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_step_pct: "{{ brightness_steps_long }}"
-      - conditions: "{{ brightness_down != none and trigger.event.data.command == brightness_down }}"
+          - choose:
+              - conditions: '{{ smooth_power_off and state_attr(light,"brightness") == min_brightness }}'
+                sequence:
+                  - service: light.turn_off
+                    data:
+                      transition: '{{ light_transition / 1000 }}'
+                      entity_id: !input light
+            default:
+              - service: light.turn_on
+                data:
+                  brightness: '{{ [ [state_attr(light,"brightness")-step_short, min_brightness] | max, max_brightness] | min }}'
+                  transition: 0.25
+                  entity_id: !input light
+      - conditions: '{{ action == brightness_up_repeat }}'
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_step_pct: "-{{ brightness_steps_short }}"
-      - conditions: "{{ brightness_down_repeat != none and trigger.event.data.command == brightness_down_repeat }}"
+          # first step for the smooth power on feature: subsequent steps can skip this check since light will be already on
+          - choose:
+              # if light is off and smooth power on is disabled, turn it on at the previously saved brightness
+              - conditions: '{{ states(light) == "off" and not smooth_power_on}}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      transition: '{{ light_transition / 1000 }}'
+                      entity_id: !input light
+                  - delay:
+                      milliseconds: !input light_transition
+              # if light is off and smooth power on is enabled, turn it on at minimum brightness
+              - conditions: '{{ states(light) == "off" and smooth_power_on}}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      brightness: '{{ min_brightness }}'
+                      transition: '{{ light_transition / 1000 }}'
+                      entity_id: !input light
+                  - delay:
+                      milliseconds: !input light_transition
+          # else move on to the loop for increasing the light brightness
+          - repeat:
+              while: '{{ true }}'
+              sequence:
+                - service: light.turn_on
+                  data:
+                    brightness: '{{ [ [state_attr(light,"brightness")+step_long, min_brightness] | max, max_brightness] | min }}'
+                    transition: 0.25
+                    entity_id: !input light
+                - delay:
+                    milliseconds: 250
+      - conditions: '{{ action == brightness_down_repeat and states(light) == "on"  }}'
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              brightness_step_pct: "-{{ brightness_steps_long }}"
-      - conditions: "{{ color_up != none and trigger.event.data.command == color_up and event_light_color_mode == 'hs' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              hs_color:
-                - >
-                    {% set current_hs = state_attr(light, 'hs_color') %}
-                    {% set current_h = current_hs[0] if current_hs else 0 %}
-                    {% set new_h = (current_h + 30) % 360 %}
-                    {{ new_h }}
-                - "{{ state_attr(light, 'hs_color')[1] if state_attr(light, 'hs_color') else 100 }}"
-      - conditions: "{{ color_down != none and trigger.event.data.command == color_down and event_light_color_mode == 'hs' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              hs_color:
-                - >
-                    {% set current_hs = state_attr(light, 'hs_color') %}
-                    {% set current_h = current_hs[0] if current_hs else 0 %}
-                    {% set new_h = (current_h - 30) % 360 %}
-                    {{ new_h }}
-                - "{{ state_attr(light, 'hs_color')[1] if state_attr(light, 'hs_color') else 100 }}"
-      - conditions: "{{ color_up_repeat != none and trigger.event.data.command == color_up_repeat and event_light_color_mode == 'hs' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              hs_color:
-                - >
-                    {% set current_hs = state_attr(light, 'hs_color') %}
-                    {% set current_h = current_hs[0] if current_hs else 0 %}
-                    {% set new_h = (current_h + 1) % 360 %}
-                    {{ new_h }}
-                - "{{ state_attr(light, 'hs_color')[1] if state_attr(light, 'hs_color') else 100 }}"
-      - conditions: "{{ color_down_repeat != none and trigger.event.data.command == color_down_repeat and event_light_color_mode == 'hs' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              hs_color:
-                - >
-                    {% set current_hs = state_attr(light, 'hs_color') %}
-                    {% set current_h = current_hs[0] if current_hs else 0 %}
-                    {% set new_h = (current_h - 1) % 360 %}
-                    {{ new_h }}
-                - "{{ state_attr(light, 'hs_color')[1] if state_attr(light, 'hs_color') else 100 }}"
-      - conditions: "{{ color_up != none and trigger.event.data.command == color_up and event_light_color_mode == 'color_temp' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              color_temp:
-                - >
-                    {% set current_temp = state_attr(light, 'color_temp') %}
-                    {% set new_temp = (current_temp + 50) %}
-                    {{ new_temp }}
-      - conditions: "{{ color_down != none and trigger.event.data.command == color_down and event_light_color_mode == 'color_temp' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              color_temp:
-                - >
-                    {% set current_temp = state_attr(light, 'color_temp') %}
-                    {% set new_temp = (current_temp - 50) %}
-                    {{ new_temp }}
-      - conditions: "{{ color_up_repeat != none and trigger.event.data.command == color_up_repeat and event_light_color_mode == 'color_temp' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              color_temp:
-                - >
-                    {% set current_temp = state_attr(light, 'color_temp') %}
-                    {% set new_temp = (current_temp + 10) %}
-                    {{ new_temp }}
-      - conditions: "{{ color_down_repeat != none and trigger.event.data.command == color_down_repeat and event_light_color_mode == 'color_temp' }}"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: !input light_transition
-              color_temp:
-                - >
-                    {% set current_temp = state_attr(light, 'color_temp') %}
-                    {% set new_temp = (current_temp - 10) %}
-                    {{ new_temp }}
-  default: []
+          - choose:
+              # using a separate sequence for the smooth power off feature to not perform unnecessary checks at every iteration when the feature is disabled
+              - conditions: '{{ smooth_power_off }}'
+                sequence:
+                  - repeat:
+                      # continue lowering brightness until the light turns off
+                      while: '{{ states(light) != "off" }}'
+                      sequence:
+                        - choose:
+                            # if the light is at minimum brightness, turn it off
+                            - conditions: '{{ state_attr(light,"brightness") == min_brightness }}'
+                              sequence:
+                                - service: light.turn_off
+                                  data:
+                                    transition: '{{ light_transition / 1000 }}'
+                                    entity_id: !input light
+                                - delay:
+                                    milliseconds: !input light_transition
+                          # else lower the light's brightness
+                          default:
+                            - service: light.turn_on
+                              data:
+                                brightness: '{{ [ [state_attr(light,"brightness")-step_long, min_brightness] | max, max_brightness] | min }}'
+                                transition: 0.25
+                                entity_id: !input light
+                            - delay:
+                                milliseconds: 250
+            default:
+              - repeat:
+                  # continue lowering brightness until the light turns off
+                  while: '{{ states(light) != "off" }}'
+                  sequence:
+                    # lower the light's brightness. since smooth power off is disabled, never let the brightness move below the user-provided minimum
+                    - service: light.turn_on
+                      data:
+                        brightness: '{{ [ [state_attr(light,"brightness")-step_long, min_brightness] | max, max_brightness] | min }}'
+                        transition: 0.25
+                        entity_id: !input light
+                    - delay:
+                        milliseconds: 250
+      - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
+    sequence:
+      choose:
+        - conditions: '{{ light_color_mode_id == "hs_color" }}'
+          sequence:
+            - repeat:
+                while: '{{ true }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      hs_color: >
+                        {% set colors = [
+                          [240, 100], [220, 100], [200, 100], [50, 100],
+                          [35, 100], [30, 100], [20, 100], [30, 100],
+                          [25, 100], [20, 100], [10, 100], [0, 100],
+                          [340, 100], [320, 100], [300, 100], [280, 100],
+                          [240, 100], [210, 100], [120, 100], [60, 100]
+                        ] %}
+                        {% set current_hue = state_attr(light, "hs_color")[0] or 0 %}
+                        {% set next_color = colors[(colors | map(attribute=0) | list).index(current_hue) + 1 % colors | length] %}
+                        {{ next_color }}
+                      transition: 0.25
+                    entity_id: !input light
+                  - delay:
+                      milliseconds: 250
+
+  - conditions: '{{ action == color_down_repeat and light_color_mode_id != "none" }}'
+    sequence:
+      choose:
+        - conditions: '{{ light_color_mode_id == "hs_color" }}'
+          sequence:
+            - repeat:
+                while: '{{ true }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      hs_color: >
+                        {% set colors = [
+                          [240, 100], [220, 100], [200, 100], [50, 100],
+                          [35, 100], [30, 100], [20, 100], [30, 100],
+                          [25, 100], [20, 100], [10, 100], [0, 100],
+                          [340, 100], [320, 100], [300, 100], [280, 100],
+                          [240, 100], [210, 100], [120, 100], [60, 100]
+                        ] %}
+                        {% set current_hue = state_attr(light, "hs_color")[0] or 0 %}
+                        {% set prev_color = colors[(colors | map(attribute=0) | list).index(current_hue) - 1 % colors | length] %}
+                        {{ prev_color }}
+                      transition: 0.25
+                    entity_id: !input light
+                  - delay:
+                      milliseconds: 250
+ 
