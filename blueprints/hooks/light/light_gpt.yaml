@@ -421,7 +421,7 @@ action:
                     transition: 0.25
                   entity_id: !input light
       #Repeat GPT stuk
-      - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
+    - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
     sequence:
       choose:
         - conditions: '{{ light_color_mode_id == "hs_color" }}'
@@ -433,30 +433,14 @@ action:
                     data:
                       hs_color: >
                         {% set colors = [
-                          [240, 100],  # Koude hemel – 6000 Kelvin
-                          [220, 100],  # Koud daglicht – 5000 Kelvin
-                          [200, 100],  # Koudwit – 4000 Kelvin
-                          [50, 100],   # Zonsopgang – 3000 Kelvin
-                          [35, 100],   # Warmwit – 2700 Kelvin
-                          [30, 100],   # Warm schijnsel – 2200 Kelvin
-                          [20, 100],   # Kaarslicht – 1780 Kelvin
-                          [30, 100],   # Barnsteen
-                          [25, 100],   # Perzik
-                          [20, 100],   # Donkerperzik
-                          [10, 100],   # Donkerrood
-                          [0, 100],    # Roze
-                          [340, 100],  # Lichtroze
-                          [320, 100],  # Donkerroze
-                          [300, 100],  # Lichtpaars
-                          [280, 100],  # Donkerpaars
-                          [240, 100],  # Blauw
-                          [210, 100],  # Lichtblauw
-                          [120, 100],  # Lime
-                          [60, 100]    # Geel
+                          [240, 100], [220, 100], [200, 100], [50, 100],
+                          [35, 100], [30, 100], [20, 100], [30, 100],
+                          [25, 100], [20, 100], [10, 100], [0, 100],
+                          [340, 100], [320, 100], [300, 100], [280, 100],
+                          [240, 100], [210, 100], [120, 100], [60, 100]
                         ] %}
                         {% set current_hue = state_attr(light, "hs_color")[0] or 0 %}
-                        {% set next_index = (colors | map(attribute=0) | list).index(current_hue) + 1 %}
-                        {% set next_color = colors[next_index % colors | length] %}
+                        {% set next_color = colors[(colors | map(attribute=0) | list).index(current_hue) + 1 % colors | length] %}
                         {{ next_color }}
                       transition: 0.25
                     entity_id: !input light
@@ -475,36 +459,20 @@ action:
                     data:
                       hs_color: >
                         {% set colors = [
-                          [240, 100],  # Koude hemel – 6000 Kelvin
-                          [220, 100],  # Koud daglicht – 5000 Kelvin
-                          [200, 100],  # Koudwit – 4000 Kelvin
-                          [50, 100],   # Zonsopgang – 3000 Kelvin
-                          [35, 100],   # Warmwit – 2700 Kelvin
-                          [30, 100],   # Warm schijnsel – 2200 Kelvin
-                          [20, 100],   # Kaarslicht – 1780 Kelvin
-                          [30, 100],   # Barnsteen
-                          [25, 100],   # Perzik
-                          [20, 100],   # Donkerperzik
-                          [10, 100],   # Donkerrood
-                          [0, 100],    # Roze
-                          [340, 100],  # Lichtroze
-                          [320, 100],  # Donkerroze
-                          [300, 100],  # Lichtpaars
-                          [280, 100],  # Donkerpaars
-                          [240, 100],  # Blauw
-                          [210, 100],  # Lichtblauw
-                          [120, 100],  # Lime
-                          [60, 100]    # Geel
+                          [240, 100], [220, 100], [200, 100], [50, 100],
+                          [35, 100], [30, 100], [20, 100], [30, 100],
+                          [25, 100], [20, 100], [10, 100], [0, 100],
+                          [340, 100], [320, 100], [300, 100], [280, 100],
+                          [240, 100], [210, 100], [120, 100], [60, 100]
                         ] %}
                         {% set current_hue = state_attr(light, "hs_color")[0] or 0 %}
-                        {% set prev_index = (colors | map(attribute=0) | list).index(current_hue) - 1 %}
-                        {% set prev_color = colors[prev_index % colors | length] %}
+                        {% set prev_color = colors[(colors | map(attribute=0) | list).index(current_hue) - 1 % colors | length] %}
                         {{ prev_color }}
                       transition: 0.25
                     entity_id: !input light
                   - delay:
                       milliseconds: 250
-            # Nieuw stuk              
+              # Nieuw stuk              
             - conditions: '{{ light_color_mode_id == "hs_color" }}'
               sequence:
                 - repeat:
