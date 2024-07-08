@@ -8,8 +8,9 @@ hs_color:
   - [35, 85]  # Warmwit – 2700K
   - [30, 90]  # Warm schijnsel – 2200K
   - [25, 95]  # Kaarslicht – 1780K
+#
 hs_color: [[210, 30], [200, 25], [190, 20], [40, 80], [35, 85], [30, 90], [25, 95]]
-
+#
 
 hs_color:
   - [30, 100]   # Barnsteen
