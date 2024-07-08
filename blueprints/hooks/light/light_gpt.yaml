@@ -385,17 +385,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: >
-                    {% set hue = (state_attr(light, "hs_color")[0] or 0) %}
-                    {% if hue < 90 %}
-                      [0, 100]
-                    {% elif hue < 180 %}
-                      [120, 100]
-                    {% elif hue < 270 %}
-                      [240, 100]
-                    {% else %}
-                      [360, 100]
-                    {% endif %} 
+                    hs_color: '{{ [0, 100] if (state_attr(light,"hs_color")[0] or 0) < 90 else [120, 100] if (state_attr(light,"hs_color")[0] or 0) < 180 else [240, 100] if (state_attr(light,"hs_color")[0] or 0) < 270 else [360, 100] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
@@ -412,17 +402,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: >
-                    {% set hue = (state_attr(light, "hs_color")[0] or 0) %}
-                    {% if hue < 90 %}
-                      [0, 100]
-                    {% elif hue < 180 %}
-                      [120, 100]
-                    {% elif hue < 270 %}
-                      [240, 100]
-                    {% else %}
-                      [360, 100]
-                    {% endif %} 
+                    hs_color: '{{ [0, 100] if (state_attr(light,"hs_color")[0] or 0) < 90 else [120, 100] if (state_attr(light,"hs_color")[0] or 0) < 180 else [240, 100] if (state_attr(light,"hs_color")[0] or 0) < 270 else [360, 100] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
@@ -447,17 +427,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: >
-                          {% set hue = (state_attr(light, "hs_color")[0] or 0) %}
-                          {% if hue < 90 %}
-                            [0, 100]
-                          {% elif hue < 180 %}
-                            [120, 100]
-                          {% elif hue < 270 %}
-                            [240, 100]
-                          {% else %}
-                            [360, 100]
-                          {% endif %} 
+                          hs_color: '{{ [0, 100] if (state_attr(light,"hs_color")[0] or 0) < 90 else [120, 100] if (state_attr(light,"hs_color")[0] or 0) < 180 else [240, 100] if (state_attr(light,"hs_color")[0] or 0) < 270 else [360, 100] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
@@ -484,17 +454,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: >
-                          {% set hue = (state_attr(light, "hs_color")[0] or 0) %}
-                          {% if hue < 90 %}
-                            [0, 100]
-                          {% elif hue < 180 %}
-                            [120, 100]
-                          {% elif hue < 270 %}
-                            [240, 100]
-                          {% else %}
-                            [360, 100]
-                          {% endif %} 
+                          hs_color: '{{ [0, 100] if (state_attr(light,"hs_color")[0] or 0) < 90 else [120, 100] if (state_attr(light,"hs_color")[0] or 0) < 180 else [240, 100] if (state_attr(light,"hs_color")[0] or 0) < 270 else [360, 100] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
