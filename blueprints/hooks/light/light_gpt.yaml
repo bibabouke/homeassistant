@@ -447,6 +447,36 @@ action:
                     entity_id: !input light
                   - delay:
                       milliseconds: 250
+- conditions: '{{ action == color_down_repeat and light_color_mode_id != "none" }}'
+  sequence:
+    - choose:
+        - conditions: '{{ light_color_mode_id == "color_temp" }}'
+          sequence:
+            - repeat:
+                while: '{{ true }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      color_temp: '{{ [state_attr(light, "color_temp") | int - 50, 153] | max }}'
+                      transition: 0.25
+                    entity_id: !input light
+                  - delay:
+                      milliseconds: 250
+  - conditions: '{{ action == color_down_repeat and light_color_mode_id != "none" }}'
+  sequence:
+    - choose:
+        - conditions: '{{ light_color_mode_id == "color_temp" }}'
+          sequence:
+            - repeat:
+                while: '{{ true }}'
+                sequence:
+                  - service: light.turn_on
+                    data:
+                      color_temp: '{{ [state_attr(light, "color_temp") | int - 50, 153] | max }}'
+                      transition: 0.25
+                    entity_id: !input light
+                  - delay:
+                      milliseconds: 250
         - conditions: '{{ light_color_mode_id == "hs_color" }}'
           sequence:
             - repeat:
@@ -459,10 +489,13 @@ action:
                         {% if hue < 0 %}
                           {% set hue = 360 + hue %}
                           {% set color_temp = (state_attr(light, "color_temp") | int + 50) %}
-                          {{ [hue % 360, 100] }}
+                          {% if color_temp > 500 %}
+                            {% set color_temp = 153 %}
+                          {% endif %}
                         {% else %}
-                          {{ [hue % 360, 100] }}
+                          {% set color_temp = state_attr(light, "color_temp") %}
                         {% endif %}
+                        {{ [hue % 360, 100] }}
                       color_temp: >
                         {% if hue < 0 %}
                           {% set color_temp = (state_attr(light, "color_temp") | int + 50) %}
