@@ -1,7 +1,7 @@
 # Blueprint metadata
 blueprint:
   name: Hook - Light org short white
-  description: |
+  description: | 
     # Hook - Light
 
     Hook automation which allows to control a light. Supports brightness and color control both for white temperature and rgb lights. Features may vary depending on the selected Controller.
