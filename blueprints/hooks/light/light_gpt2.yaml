@@ -385,7 +385,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: '{{ [(state_attr(light, "hs_color")[0] + 45) % 360, {0: 90, 15: 80, 30: 70, 45: 60, 60: 50, 75: 40, 90: 30}.get((state_attr(light, "hs_color")[0] + 45) % 360, 50)] }}'
+                    hs_color: '{{ [[0, 30], [15, 25], [30, 20], [45, 80], [60, 85], [75, 90], [90, 95]][(((state_attr(light, "hs_color")[0] or 0) // 15 + 1) % 7)] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_down and light_color_mode_id != "none" }}'
@@ -402,7 +402,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: '{{ [(state_attr(light, "hs_color")[0] + 45) % 360, {0: 90, 15: 80, 30: 70, 45: 60, 60: 50, 75: 40, 90: 30}.get((state_attr(light, "hs_color")[0] + 45) % 360, 50)] }}'
+                    hs_color: '{{ [[0, 30], [15, 25], [30, 20], [45, 80], [60, 85], [75, 90], [90, 95]][(((state_attr(light, "hs_color")[0] or 0) // 15 + 1) % 7)] }}'
                     transition: 0.25
                   entity_id: !input light
       - conditions: '{{ action == color_up_repeat and light_color_mode_id != "none" }}'
@@ -427,7 +427,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{{ [(state_attr(light, "hs_color")[0] + 45) % 360, {0: 90, 15: 80, 30: 70, 45: 60, 60: 50, 75: 40, 90: 30}.get((state_attr(light, "hs_color")[0] + 45) % 360, 50)] }}'
+                          hs_color: '{{ [[0, 30], [15, 25], [30, 20], [45, 80], [60, 85], [75, 90], [90, 95]][(((state_attr(light, "hs_color")[0] or 0) // 15 + 1) % 7)] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
@@ -454,7 +454,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{{ [(state_attr(light, "hs_color")[0] + 45) % 360, {0: 90, 15: 80, 30: 70, 45: 60, 60: 50, 75: 40, 90: 30}.get((state_attr(light, "hs_color")[0] + 45) % 360, 50)] }}'
+                          hs_color: '{{ [[0, 30], [15, 25], [30, 20], [45, 80], [60, 85], [75, 90], [90, 95]][(((state_attr(light, "hs_color")[0] or 0) // 15 + 1) % 7)] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
