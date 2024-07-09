@@ -386,7 +386,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: '{{ [(state_attr(light, "hs_color")[0] + 10) % 360, state_attr(light, "hs_color")[1]] }}'
+                    hs_color: '{{ [(state_attr(light, "hs_color")[0] + 18) % 360, state_attr(light, "hs_color")[1]] }}'
                     transition: 0.25
                   entity_id: !input light
 # KNOP LINKS Saturatie veranderen
@@ -430,7 +430,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{{ [(state_attr(light, "hs_color")[0] + 10) % 360, state_attr(light, "hs_color")[1]] }}'
+                          hs_color: '{{ [(state_attr(light, "hs_color")[0] + 18) % 360, state_attr(light, "hs_color")[1]] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
