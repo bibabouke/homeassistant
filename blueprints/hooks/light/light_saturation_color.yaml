@@ -404,7 +404,7 @@ action:
               sequence:
                 - service: light.turn_on
                   data:
-                    hs_color: '{{ [state_attr(light, "hs_color")[0], (state_attr(light, "hs_color")[1] + 10) % 110] }}'
+                    hs_color: '{{ [state_attr(light, "hs_color")[0], (state_attr(light, "hs_color")[1] + 15) % 110] }}'
                     transition: 0.25
                   entity_id: !input light
 # KNOP RECHTS kleur verhogen
@@ -458,7 +458,7 @@ action:
                     sequence:
                       - service: light.turn_on
                         data:
-                          hs_color: '{{ [state_attr(light, "hs_color")[0], (state_attr(light, "hs_color")[1] + 10) % 110] }}'
+                          hs_color: '{{ [state_attr(light, "hs_color")[0], (state_attr(light, "hs_color")[1] - 15) % 110] }}'
                           transition: 0.25
                         entity_id: !input light
                       - delay:
