@@ -75,7 +75,7 @@ blueprint:
         number:
           min: 0
           max: 50
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     temperatuur_max:
       name: Maximale Temperatuur
@@ -85,7 +85,7 @@ blueprint:
         number:
           min: 0
           max: 50
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     luchtvochtigheid_min:
       name: Minimale Luchtvochtigheid
@@ -95,7 +95,7 @@ blueprint:
         number:
           min: 0
           max: 100
-          unit_of_measurement: %
+          unit_of_measurement: '%'
 
     luchtvochtigheid_max:
       name: Maximale Luchtvochtigheid
@@ -105,7 +105,7 @@ blueprint:
         number:
           min: 0
           max: 100
-          unit_of_measurement: %
+          unit_of_measurement: '%'
 
     uv_min:
       name: Minimale UV Straling
@@ -115,7 +115,7 @@ blueprint:
         number:
           min: 0
           max: 1000
-          unit_of_measurement: W/m²
+          unit_of_measurement: 'W/m²'
 
     uv_max:
       name: Maximale UV Straling
@@ -125,7 +125,7 @@ blueprint:
         number:
           min: 0
           max: 1000
-          unit_of_measurement: W/m²
+          unit_of_measurement: 'W/m²'
 
     # Instellingen voor vakantieschakelaar
     vakantieschakelaar_tijd:
@@ -136,7 +136,7 @@ blueprint:
         number:
           min: 0
           max: 60
-          unit_of_measurement: min
+          unit_of_measurement: 'min'
 
     # Seizoensmodus
     zomer_temperatuur_min:
@@ -147,7 +147,7 @@ blueprint:
         number:
           min: 0
           max: 50
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     zomer_temperatuur_max:
       name: Maximale Temperatuur Zomer
@@ -157,7 +157,7 @@ blueprint:
         number:
           min: 0
           max: 50
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     winter_temperatuur_max:
       name: Maximale Temperatuur Winter
@@ -167,7 +167,7 @@ blueprint:
         number:
           min: 0
           max: 50
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     winter_luchtvochtigheid_max:
       name: Maximale Luchtvochtigheid Winter
@@ -177,7 +177,7 @@ blueprint:
         number:
           min: 0
           max: 100
-          unit_of_measurement: %
+          unit_of_measurement: '%'
 
 automation:
   trigger:
