@@ -1,6 +1,6 @@
 blueprint:
-  name: Insectenlampen Automatisering
-  description: Automatisering voor insectenlampen met noodbediening en schakeltijden.
+  name: Insectenlampen Automatisering met Buienradar
+  description: Automatisering voor insectenlampen met buienradar en noodbediening.
   domain: automation
   input:
     insectenlamp:
@@ -8,22 +8,6 @@ blueprint:
       selector:
         entity:
           domain: switch
-    minimum_tijd:
-      name: Minimum Tijd (minuten)
-      selector:
-        number:
-          min: 5
-          max: 120
-          step: 1
-          unit_of_measurement: 'min'
-    maximum_tijd:
-      name: Maximum Tijd (minuten)
-      selector:
-        number:
-          min: 5
-          max: 120
-          step: 1
-          unit_of_measurement: 'min'
     noodbediening:
       name: Noodbediening Insectenlampen
       selector:
@@ -34,33 +18,105 @@ blueprint:
       selector:
         entity:
           domain: timer
+    weather_sensor:
+      name: Buienradar Weer Sensor
+      selector:
+        entity:
+          domain: sensor
+    uv_sensor:
+      name: UV Sensor
+      selector:
+        entity:
+          domain: sensor
+    grondtemperatuur_sensor:
+      name: Grondtemperatuur Sensor
+      selector:
+        entity:
+          domain: sensor
+    bewegingssensor:
+      name: Bewegingssensor
+      selector:
+        entity:
+          domain: binary_sensor
+    vakantieschakelaar:
+      name: Vakantieschakelaar
+      selector:
+        entity:
+          domain: input_boolean
+    seizoensmodus:
+      name: Seizoensmodus
+      selector:
+        entity:
+          domain: input_select
+    app_aanwezigheid:
+      name: Home Assistant App Aanwezigheid
+      selector:
+        entity:
+          domain: person
+    handmatige_aanwezigheidsdetectie:
+      name: Beeldscherm Monitor Schakelaar
+      selector:
+        entity:
+          domain: switch
 
 trigger:
   - platform: state
-    entity_id: !input noodbediening
+    entity_id: !input 'insectenlamp'
     to: 'on'
+
+condition:
+  - condition: and
+    conditions:
+      - condition: state
+        entity_id: !input 'noodbediening'
+        state: 'off'
+      - condition: numeric_state
+        entity_id: !input 'weather_sensor'
+        attribute: humidity
+        above: 50
+        below: 80
+      - condition: numeric_state
+        entity_id: !input 'weather_sensor'
+        attribute: temperature
+        above: 20
+        below: 35
+      - condition: numeric_state
+        entity_id: !input 'uv_sensor'
+        above: 200
+        below: 300
+      - condition: template
+        value_template: >
+          {% set temp = state_attr('sensor.weather_buienradar', 'temperature') %}
+          {% set humidity = state_attr('sensor.weather_buienradar', 'humidity') %}
+          {% set uv = state_attr('sensor.uv_sensor', 'value') %}
+          {% if temp is not none and humidity is not none and uv is not none %}
+            {% if (temp < 20 or temp > 35) or (humidity < 50 or humidity > 80) or (uv < 200 or uv > 300) %}
+              {{ true }}
+            {% else %}
+              {{ false }}
+            {% endif %}
+          {% else %}
+            {{ false }}
+          {% endif %}
 
 action:
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input noodbediening
+            entity_id: !input 'vakantieschakelaar'
+            state: 'off'
+          - condition: state
+            entity_id: !input 'seizoensmodus'
+            state: 'zomer'
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'insectenlamp'
+      - conditions:
+          - condition: state
+            entity_id: !input 'vakantieschakelaar'
             state: 'on'
         sequence:
-          - service: timer.start
-            data:
-              entity_id: !input timer
-              duration: '00:60:00'
           - service: switch.turn_off
             target:
-              entity_id: !input insectenlamp
-    default:
-      - service: switch.turn_on
-        target:
-          entity_id: !input insectenlamp
-      - service: timer.start
-        data:
-          entity_id: !input timer
-          duration: '00:60:00'
-
-mode: single
+              entity_id: !input 'insectenlamp'
