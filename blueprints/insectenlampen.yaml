@@ -17,6 +17,34 @@ blueprint:
         entity:
           domain: weather
 
+    sensor_uv:
+      name: UV Straling Sensor
+      description: De UV-stralingssensor van Buienradar (optioneel).
+      selector:
+        entity:
+          domain: sensor
+
+    sensor_grondtemperatuur:
+      name: Grondtemperatuur Sensor
+      description: De grondtemperatuur sensor van Buienradar (optioneel).
+      selector:
+        entity:
+          domain: sensor
+
+    sensor_neerslagintensiteit:
+      name: Neerslagintensiteit Sensor
+      description: De neerslagintensiteit sensor van Buienradar (optioneel).
+      selector:
+        entity:
+          domain: sensor
+
+    sensor_neerslagverwachting:
+      name: Neerslagverwachting Sensor
+      description: De neerslagverwachting sensor van Buienradar (optioneel).
+      selector:
+        entity:
+          domain: sensor
+
     bewegingssensor:
       name: Bewegingssensor
       description: De bewegingssensor die de aanwezigheid detecteert.
@@ -66,6 +94,7 @@ blueprint:
         entity:
           domain: timer
 
+    # Instellingen
     temperatuur_min:
       name: Minimum Temperatuur
       description: Minimum temperatuur voor het inschakelen van de lamp.
@@ -168,20 +197,32 @@ condition:
           {% set weather = states('weather.buienradar') %}
           {% set temperature = weather.attributes.temperature | float %}
           {% set humidity = weather.attributes.humidity | float %}
-          {% set uv = state_attr('sensor.straling', 'value') | float %}
-          {% set rain = state_attr('sensor.neerslagintensiteit', 'value') | float %}
           {% set mode = states('input_select.seizoensmodus') %}
           
+          {% set uv_sensor = states('sensor_uv') if is_state('sensor_uv', 'on') else 0 %}
+          {% set uv = uv_sensor | float %}
+          
+          {% set ground_temp_sensor = states('sensor_grondtemperatuur') if is_state('sensor_grondtemperatuur', 'on') else 0 %}
+          {% set ground_temp = ground_temp_sensor | float %}
+          
+          {% set rain_intensity_sensor = states('sensor_neerslagintensiteit') if is_state('sensor_neerslagintensiteit', 'on') else 0 %}
+          {% set rain_intensity = rain_intensity_sensor | float %}
+          
+          {% set rain_forecast_sensor = states('sensor_neerslagverwachting') if is_state('sensor_neerslagverwachting', 'on') else 0 %}
+          {% set rain_forecast = rain_forecast_sensor | float %}
+          
           {% if mode == 'Zomer' %}
-            {{ temperature >= (temperature_min | int) and temperature <= (temperature_max | int) and
+            {{ temperature >= (temperatuur_min | int) and temperature <= (temperatuur_max | int) and
                humidity >= (luchtvochtigheid_min | int) and humidity <= (luchtvochtigheid_max | int) and
                uv >= (uv_min | int) and uv <= (uv_max | int) and
-               rain <= (regen_max | int) }}
+               rain_intensity <= (regen_max | int) and
+               rain_forecast <= (regen_max | int) }}
           {% elif mode == 'Winter' %}
-            {{ temperature <= (temperature_max | int) and
+            {{ temperature <= (temperatuur_max | int) and
                humidity >= (luchtvochtigheid_min | int) and humidity <= (luchtvochtigheid_max | int) and
                uv <= (uv_max | int) and
-               rain <= (regen_max | int) }}
+               rain_intensity <= (regen_max | int) and
+               rain_forecast <= (regen_max | int) }}
           {% else %}
             {{ false }}
           {% endif %}
