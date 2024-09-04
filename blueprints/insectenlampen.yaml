@@ -144,13 +144,10 @@ condition:
     state: "off"
   - condition: template
     value_template: >
-      {% set uv_index_drempel = states('input_number.uv_index_drempel') | float %}
-      {% set luchtvochtigheid_drempel = states('input_number.luchtvochtigheid_drempel') | float %}
-      {% set temperatuur_drempel = states('input_number.temperatuur_drempel') | float %}
       {% set uv_index = states('sensor.uv_index') | float(0) %}
       {% set humidity = states('sensor.humidity') | float(0) %}
       {% set temperature = states('sensor.temperature') | float(0) %}
-      {{ uv_index < uv_index_drempel and humidity > luchtvochtigheid_drempel and temperature > temperatuur_drempel }}
+      {{ uv_index < !input uv_index_drempel and humidity > !input luchtvochtigheid_drempel and temperature > !input temperatuur_drempel }}
 
 action:
   - choose:
@@ -161,12 +158,12 @@ action:
         sequence:
           - service: switch.turn_on
             target:
-              entity_id: "{{ !input.insectenlamp_1 if !input.insectenlamp_1 != '' else !input.insectenlamp_2 }}"
+              entity_id: !input insectenlamp_1
           - delay:
               minutes: !input max_aan_tijd
           - service: switch.turn_off
             target:
-              entity_id: "{{ !input.insectenlamp_1 if !input.insectenlamp_1 != '' else !input.insectenlamp_2 }}"
+              entity_id: !input insectenlamp_1
       - conditions:
           - condition: time
             after: !input middag_schakeltijd
@@ -174,37 +171,16 @@ action:
         sequence:
           - service: switch.turn_on
             target:
-              entity_id: >
-                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
-                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
+              entity_id: !input insectenlamp_1
           - delay:
               minutes: !input max_aan_tijd
           - service: switch.turn_off
             target:
-              entity_id: >
-                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
-                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
+              entity_id: !input insectenlamp_1
       - conditions:
           - condition: time
             after: !input avond_schakeltijd
             before: !input nacht_schakeltijd
-        sequence:
-          - service: switch.turn_on
-            target:
-              entity_id: >
-                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
-                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
-          - delay:
-              minutes: !input max_aan_tijd
-          - service: switch.turn_off
-            target:
-              entity_id: >
-                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
-                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
-      - conditions:
-          - condition: time
-            after: !input nacht_schakeltijd
-            before: "00:00:00"
         sequence:
           - service: switch.turn_on
             target:
@@ -216,4 +192,3 @@ action:
               entity_id: !input insectenlamp_2
 
 mode: restart
-
