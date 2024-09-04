@@ -29,7 +29,7 @@ blueprint:
         number:
           min: -10
           max: 40
-          unit_of_measurement: 'Celsius'
+          unit_of_measurement: '°C'
 
     temperature_max:
       name: Maximum Temperatuur
@@ -39,17 +39,17 @@ blueprint:
         number:
           min: -10
           max: 40
-          unit_of_measurement: 'Celsius'
+          unit_of_measurement: '°C'
 
     humidity_threshold:
       name: Luchtvochtigheidsdrempel
-      description: Luchtvochtigheid waarbij de insectenlampen aan moeten gaan (in percent).
+      description: Luchtvochtigheid waarbij de insectenlampen aan moeten gaan (in %).
       default: 60
       selector:
         number:
           min: 0
           max: 100
-          unit_of_measurement: 'percent'
+          unit_of_measurement: '%'
 
     uv_sensor:
       name: UV-Straling sensor [Optioneel]
