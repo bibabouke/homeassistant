@@ -1,13 +1,9 @@
 # Opdracht voor ChatGPT: Insectenlamp Automatiserings-Blueprint
 
 ## Doel
-Schrijf een YAML-script voor de blueprint dat voldoet aan bovenstaande eisen en structuur. Het script moet gemakkelijk te importeren zijn in een Home Assistant-omgeving en alle bovenstaande functionaliteiten bevatten, inclusief de logische volgorde van instellingen, uitleg bij parameters, en automatiseringen.
+Schrijf een YAML-script voor de blueprint dat voldoet aan de onderstaande eisen en structuur. Het script moet gemakkelijk te importeren zijn in een Home Assistant-omgeving en alle bovenstaande functionaliteiten bevatten, inclusief de logische volgorde van instellingen, uitleg bij parameters, en automatiseringen.
 
-### Notitie
-Deze opdracht moet in perfecte YAML-syntax worden geschreven zonder fouten, klaar om direct gebruikt te worden in GitHub en Home Assistant.
-
-
-## Context
+### Context
 De blueprint moet worden ontworpen om insectenlampen automatisch te bedienen op basis van verschillende omgevingsfactoren zoals temperatuur, luchtvochtigheid, UV-straling, beweging en weersomstandigheden. Dit wordt gedaan om muggen, vliegen en andere insecten effectief te bestrijden.
 
 ### Gebruikers
@@ -19,10 +15,10 @@ De blueprint is bedoeld voor gebruikers van Home Assistant die specifieke contro
 De volgende sensoren moeten optioneel worden toegevoegd, met elk bijbehorende instellingen:
 - **weather.buienradar**: Deze sensor levert algemene weergegevens zoals temperatuur, luchtvochtigheid, windsnelheid, etc.
   - **Gekozen parameters**:
-    - **Temperatuur**: 20-35°C, aangezien muggen en vliegen het meest actief zijn binnen dit bereik.
-    - **Luchtvochtigheid**: >60%, aangezien hogere luchtvochtigheid insecten aantrekt.
-  - **Uitleg**: Voeg na elke parameter-instelling een korte uitleg toe, waarin staat waarom deze waarde is gekozen. Bijvoorbeeld:
-    - "Muggen en vliegen worden het meest actief bij temperaturen tussen 20 en 35 graden Celsius. Stel de temperatuur hoger of lager in om de gevoeligheid te vergroten of te verkleinen."
+    - **Temperatuur**: 20-35°C
+      - **Uitleg**: Muggen en vliegen worden het meest actief bij temperaturen tussen 20 en 35 graden Celsius. Stel de temperatuur hoger of lager in om de gevoeligheid te vergroten of te verkleinen.
+    - **Luchtvochtigheid**: >60%
+      - **Uitleg**: Hogere luchtvochtigheid trekt insecten aan.
   
 - **sensor.straling**: Meet de UV-straling (W/m²).
   - **Uitleg**: Hogere UV-straling kan insecten actiever maken.
@@ -45,16 +41,40 @@ De volgende sensoren moeten optioneel worden toegevoegd, met elk bijbehorende in
   
 - **Logische volgorde**: Voorzie de blueprint van een logische structuur waarin eerst de entiteit wordt ingevoerd en daarna direct de bijbehorende parameters worden ingesteld. Vermijd het groeperen van alle entiteiten bovenaan en alle parameters onderaan; houd de instellingen per entiteit bij elkaar.
 
-### 3. Acties en Automatiseringen
-- **Bewegingssensor**: Bij detectie van beweging worden de lampen tijdelijk ingeschakeld.
-  - **Actie**: Verleng de actieve periode van de lampen of schakel over van de vakantiemodus naar de thuis-modus. Voeg uitleg toe over het effect van beweging op de automatisering.
+### 3. Helpers en Automatiseringen
+Gebruik de volgende helpers in de Home Assistant-configuratie:
+- **input_boolean.vakantie** (`Vakantieschakelaar`):
+  - **Type:** `input_boolean`
+  - **Beschrijving:** Schakelt de vakantiemodus in of uit. Wanneer ingeschakeld, blijven de insectenlampen uit, tenzij beweging of een thuisregistratie wordt gedetecteerd en de weersomstandigheden insectenactiviteit voorspellen.
 
-- **Vakantieschakelaar**: Wanneer ingeschakeld, beperkt dit de werking van de lampen om energie te besparen.
-  - **Actie**: Lampen blijven uit tenzij de weersomstandigheden extreme insectenactiviteit voorspellen.
+- **input_select.seizoensmodus** (`Seizoensmodus`):
+  - **Type:** `input_select`
+  - **Opties:** `Zomerstand`, `Winterstand`
+  - **Beschrijving:** Wisselt automatisch tussen zomer- en wintermodus op basis van temperatuur en luchtvochtigheid.
 
-- **Seizoensmodus**: Wisselt tussen zomer- en wintermodus op basis van temperatuur en andere weergegevens.
-  - **Actie**: In de zomermodus gaan de lampen vaker en langer aan; in de wintermodus blijven ze uit tenzij ongebruikelijk warm weer wordt gedetecteerd.
+- **timer.noodbediening_insectenlamp_timer** (`Noodbediening Insectenlamp Timer`):
+  - **Type:** `timer`
+  - **Duur:** 1 uur
+  - **Beschrijving:** Schakelt de insectenlamp tijdelijk uit op verzoek van de noodbediening.
 
-### 4. Tekstuele Uitleg en Helderheid
-- **Gedetailleerde uitleg**: Zorg ervoor dat er bij elke stap duidelijke tekstuele uitleg wordt gegeven, vooral over de aanbevolen waarden en waarom ze belangrijk zijn. Elke parameterinstelling moet een uitleg bevatten die de gebruiker begrijpt.
-- **Uitleg waar nodig**: Voor elke handeling of wijziging in de blueprint moet tekstuele toelichting aanwezig zijn om de gebruiker te helpen bij het maken van de juiste keuzes.
+- **input_boolean.noodbediening_insectenlamp** (`Noodbediening Insectenlamp`):
+  - **Type:** `input_boolean`
+  - **Beschrijving:** Handmatige schakelaar om de insectenlamp in of uit te schakelen. Activeert de timer `timer.noodbediening_insectenlamp_timer` wanneer ingeschakeld.
+
+### 4. Acties en Automatiseringen
+- **Automatische Seizoenswisseling:**
+  - **Actie:** `input_select.seizoensmodus` schakelt automatisch tussen `Zomerstand` en `Winterstand` op basis van sensorwaarden zoals temperatuur en luchtvochtigheid.
+  
+- **Vakantiemodus Controle:**
+  - **Actie:** Wanneer `input_boolean.vakantie` is ingeschakeld, blijven de lampen uit, tenzij er beweging of een thuisregistratie is én de weersomstandigheden insectenactiviteit voorspellen.
+
+- **Bewegingssensor als Sub-check:**
+  - **Actie:** Controleert of er iemand thuis is. Bij langdurige afwezigheid schakelt het systeem automatisch over naar `input_boolean.vakantie`.
+
+- **Noodbediening Insectenlamp:**
+  - **Actie:** Wanneer `input_boolean.noodbediening_insectenlamp` wordt ingeschakeld, wordt de timer `timer.noodbediening_insectenlamp_timer` gestart, die de lampen 1 uur lang uitschakelt, ongeacht andere condities.
+
+### 5. Tekstuele Uitleg en Helderheid
+- **Gedetailleerde uitleg:** Zorg ervoor dat er bij elke stap duidelijke tekstuele uitleg wordt gegeven, vooral over de aanbevolen waarden en waarom ze belangrijk zijn. Elke parameterinstelling moet een uitleg bevatten die de gebruiker begrijpt.
+- **Uitleg waar nodig:** Voor elke handeling of wijziging in de blueprint moet tekstuele toelichting aanwezig zijn om de gebruiker te helpen bij het maken van de juiste keuzes.
+
