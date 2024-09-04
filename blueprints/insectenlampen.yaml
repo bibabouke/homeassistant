@@ -1,194 +1,66 @@
 blueprint:
-  name: Automatisering Insectenverdelger Lampen
-  description: Automatisering voor insectenverdelger lampen op basis van weersomstandigheden, tijdsblokken, en aanwezigheid.
+  name: Insectenlampen Automatisering
+  description: Automatisering voor insectenlampen met noodbediening en schakeltijden.
   domain: automation
   input:
-    insectenlamp_1:
-      name: Insectenlamp Keuken
-      description: Entiteit van de insectenlamp in de keuken
+    insectenlamp:
+      name: Insectenlamp Entiteit
       selector:
         entity:
           domain: switch
-      default: ""
-    insectenlamp_2:
-      name: Insectenlamp Kantoorruimte
-      description: Entiteit van de insectenlamp in de kantoorruimte
-      selector:
-        entity:
-          domain: switch
-      default: ""
-    weer_sensor:
-      name: Buienradar Weersensor
-      description: Selecteer de Buienradar sensor voor weersomstandigheden
-      selector:
-        entity:
-          domain: weather
-      default: ""
-    knop_beeldscherm:
-      name: Beeldscherm Aan/Uit Knop (Optioneel)
-      description: Entiteit van de knop die het beeldscherm inschakelt
-      selector:
-        entity:
-          domain: switch
-      default: ""
-    bewegingssensor_keuken:
-      name: Bewegingssensor Keuken (Optioneel)
-      description: Bewegingssensor nabij de keuken
-      selector:
-        entity:
-          domain: binary_sensor
-      default: ""
-    bewegingssensor_kantoor:
-      name: Bewegingssensor Kantoor Overloop (Optioneel)
-      description: Bewegingssensor nabij de kantoorruimte
-      selector:
-        entity:
-          domain: binary_sensor
-      default: ""
-    aanwezigheidssensor:
-      name: Aanwezigheidsdetectie (Optioneel)
-      description: Gebruik Home Assistant app voor aanwezigheid van bewoners
-      selector:
-        entity:
-          domain: person
-          multiple: true
-      default: []
-    vakantie_mode:
-      name: Vakantiemodus Schakelaar
-      description: Schakelaar om de vakantiemodus in of uit te schakelen
-      selector:
-        entity:
-          domain: input_boolean
-    seizoen_mode:
-      name: Seizoensmodus Schakelaar
-      description: Schakelaar om de seizoensmodus (zomer/winter) in te stellen
-      selector:
-        entity:
-          domain: input_boolean
-    ochtend_schakeltijd:
-      name: Ochtend Schakeltijd
-      description: Tijdstip waarop de ochtendperiode begint
-      default: "06:00:00"
-      selector:
-        time:
-    middag_schakeltijd:
-      name: Middag Schakeltijd
-      description: Tijdstip waarop de middagperiode begint
-      default: "12:00:00"
-      selector:
-        time:
-    avond_schakeltijd:
-      name: Avond Schakeltijd
-      description: Tijdstip waarop de avondperiode begint
-      default: "18:00:00"
-      selector:
-        time:
-    nacht_schakeltijd:
-      name: Nacht Schakeltijd
-      description: Tijdstip waarop de nachtperiode begint
-      default: "22:00:00"
-      selector:
-        time:
-    uv_index_drempel:
-      name: UV-index drempelwaarde
-      description: Maximale UV-index om de lampen te activeren
-      default: 5
-      selector:
-        number:
-          min: 0
-          max: 11
-          step: 1
-          unit_of_measurement: "UV-index"
-    luchtvochtigheid_drempel:
-      name: Luchtvochtigheid drempelwaarde
-      description: Minimale luchtvochtigheid om de lampen te activeren
-      default: 60
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 1
-          unit_of_measurement: "%"
-    temperatuur_drempel:
-      name: Temperatuur drempelwaarde
-      description: Minimale temperatuur om de lampen te activeren
-      default: 15
-      selector:
-        number:
-          min: -10
-          max: 50
-          step: 1
-          unit_of_measurement: "°C"
-    max_aan_tijd:
-      name: Maximale Aanstaatijd
-      description: Maximale tijd dat de lampen aan mogen blijven
-      default: 120
+    minimum_tijd:
+      name: Minimum Tijd (minuten)
       selector:
         number:
           min: 5
-          max: 240
-          step: 5
-          unit_of_measurement: "minuten"
+          max: 120
+          step: 1
+          unit_of_measurement: 'min'
+    maximum_tijd:
+      name: Maximum Tijd (minuten)
+      selector:
+        number:
+          min: 5
+          max: 120
+          step: 1
+          unit_of_measurement: 'min'
+    noodbediening:
+      name: Noodbediening Insectenlampen
+      selector:
+        entity:
+          domain: input_boolean
+    timer:
+      name: Noodbediening Timer
+      selector:
+        entity:
+          domain: timer
 
 trigger:
-  - platform: time
-    at:
-      - !input ochtend_schakeltijd
-      - !input middag_schakeltijd
-      - !input avond_schakeltijd
-      - !input nacht_schakeltijd
-
-condition:
-  - condition: state
-    entity_id: !input vakantie_mode
-    state: "off"
-  - condition: template
-    value_template: >
-      {% set uv_index = states('sensor.uv_index') | float(0) %}
-      {% set humidity = states('sensor.humidity') | float(0) %}
-      {% set temperature = states('sensor.temperature') | float(0) %}
-      {{ uv_index < !input uv_index_drempel and humidity > !input luchtvochtigheid_drempel and temperature > !input temperatuur_drempel }}
+  - platform: state
+    entity_id: !input noodbediening
+    to: 'on'
 
 action:
   - choose:
       - conditions:
-          - condition: time
-            after: !input ochtend_schakeltijd
-            before: !input middag_schakeltijd
+          - condition: state
+            entity_id: !input noodbediening
+            state: 'on'
         sequence:
-          - service: switch.turn_on
-            target:
-              entity_id: !input insectenlamp_1
-          - delay:
-              minutes: !input max_aan_tijd
+          - service: timer.start
+            data:
+              entity_id: !input timer
+              duration: '00:60:00'
           - service: switch.turn_off
             target:
-              entity_id: !input insectenlamp_1
-      - conditions:
-          - condition: time
-            after: !input middag_schakeltijd
-            before: !input avond_schakeltijd
-        sequence:
-          - service: switch.turn_on
-            target:
-              entity_id: !input insectenlamp_1
-          - delay:
-              minutes: !input max_aan_tijd
-          - service: switch.turn_off
-            target:
-              entity_id: !input insectenlamp_1
-      - conditions:
-          - condition: time
-            after: !input avond_schakeltijd
-            before: !input nacht_schakeltijd
-        sequence:
-          - service: switch.turn_on
-            target:
-              entity_id: !input insectenlamp_2
-          - delay:
-              minutes: !input max_aan_tijd
-          - service: switch.turn_off
-            target:
-              entity_id: !input insectenlamp_2
+              entity_id: !input insectenlamp
+    default:
+      - service: switch.turn_on
+        target:
+          entity_id: !input insectenlamp
+      - service: timer.start
+        data:
+          entity_id: !input timer
+          duration: '00:60:00'
 
-mode: restart
+mode: single
