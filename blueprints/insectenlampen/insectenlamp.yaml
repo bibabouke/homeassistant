@@ -1,11 +1,11 @@
 blueprint:
   name: Insectenlamp Automatiserings-Blueprint
-  description: Automatisering voor het bedienen van insectenlampen op basis van omgevingsfactoren zoals temperatuur, luchtvochtigheid, UV-straling, beweging en weersomstandigheden.
+  description: Automatisering voor het bedienen van insectenlampen op basis van weersomstandigheden en een vakantieschakelaar.
   domain: automation
   input:
     insect_lamps:
       name: Apparaten voor insectenbestrijding
-      description: Selecteer alle apparaten die je wilt aansturen voor insectenbestrijding (insectenlampen, lampen, etc.).
+      description: Selecteer de insectenlampen die je wilt aansturen.
       selector:
         target:
           entity:
@@ -16,7 +16,7 @@ blueprint:
 
     weather_sensor:
       name: Weersensor
-      description: Selecteer de weer-gerelateerde sensor die temperatuur en luchtvochtigheid meet.
+      description: Selecteer de sensor die temperatuur en luchtvochtigheid meet.
       selector:
         entity:
           domain: weather
@@ -51,60 +51,12 @@ blueprint:
           max: 100
           unit_of_measurement: '%'
 
-    uv_sensor:
-      name: UV-Straling sensor [Optioneel]
-      description: Selecteer de sensor die UV-straling meet. Optioneel, alleen gebruiken als beschikbaar.
-      selector:
-        target:
-          entity:
-            domain: sensor
-
-    soil_temperature_sensor:
-      name: Grondtemperatuur sensor [Optioneel]
-      description: Selecteer de sensor die de grondtemperatuur meet. Optioneel, alleen gebruiken als beschikbaar.
-      selector:
-        target:
-          entity:
-            domain: sensor
-
-    rainfall_sensor:
-      name: Neerslagintensiteit sensor [Optioneel]
-      description: Selecteer de sensor die de neerslagintensiteit meet. Optioneel, alleen gebruiken als beschikbaar.
-      selector:
-        target:
-          entity:
-            domain: sensor
-
     vacation_mode:
       name: Vakantieschakelaar
-      description: Schakelt de vakantiemodus in of uit. Wanneer ingeschakeld, blijven de insectenlampen uit, tenzij beweging of een thuisregistratie wordt gedetecteerd en de weersomstandigheden insectenactiviteit voorspellen.
+      description: Schakelt de vakantiemodus in of uit.
       default: false
       selector:
         boolean:
-
-    seasonal_mode:
-      name: Seizoensmodus
-      description: Wisselt automatisch tussen zomer- en wintermodus op basis van temperatuur en luchtvochtigheid.
-      default: 'Zomerstand'
-      selector:
-        select:
-          options:
-            - Zomerstand
-            - Winterstand
-
-    emergency_switch:
-      name: Noodbediening Insectenlamp
-      description: Handmatige schakelaar om de insectenlamp in of uit te schakelen. Activeert de timer `timer.noodbediening_insectenlamp_timer` wanneer ingeschakeld.
-      default: false
-      selector:
-        boolean:
-
-    emergency_timer:
-      name: Noodbediening Insectenlamp Timer
-      description: Timer die de insectenlamp tijdelijk uitschakelt op verzoek van de noodbediening.
-      default: 1:00:00
-      selector:
-        duration:
 
   trigger:
     - platform: state
@@ -131,51 +83,15 @@ blueprint:
           attribute: humidity
           above: !input 'humidity_threshold'
 
+    - condition: state
+      entity_id: !input 'vacation_mode'
+      state: 'off'
+
   action:
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: !input 'vacation_mode'
-              state: 'on'
-          sequence:
-            - service: switch.turn_off
-              target:
-                entity_id: !input 'insect_lamps'
-        - conditions:
-            - condition: and
-              conditions:
-                - condition: numeric_state
-                  entity_id: !input 'weather_sensor'
-                  attribute: temperature
-                  above: !input 'temperature_min'
-                - condition: numeric_state
-                  entity_id: !input 'weather_sensor'
-                  attribute: temperature
-                  below: !input 'temperature_max'
-                - condition: numeric_state
-                  entity_id: !input 'weather_sensor'
-                  attribute: humidity
-                  above: !input 'humidity_threshold'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: !input 'insect_lamps'
-            - delay:
-                minutes: 10
-            - service: switch.turn_off
-              target:
-                entity_id: !input 'insect_lamps'
-    
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: !input 'emergency_switch'
-              state: 'on'
-          sequence:
-            - service: switch.turn_off
-              target:
-                entity_id: !input 'insect_lamps'
-            - delay: !input 'emergency_timer'
-            - service: switch.turn_on
-              target:
-                entity_id: !input 'insect_lamps'
+    - service: switch.turn_on
+      target:
+        entity_id: !input 'insect_lamps'
+    - delay: '00:10:00' # 10 minuten
+    - service: switch.turn_off
+      target:
+        entity_id: !input 'insect_lamps'
