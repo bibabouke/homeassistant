@@ -1,1 +1,180 @@
-#
+blueprint:
+  name: Insectenlamp Automatisering
+  description: >
+    Automatische bediening van insectenlampen op basis van temperatuur, luchtvochtigheid, UV-straling,
+    regen, en seizoenen. Optimaliseert de tijd en duur waarop de lampen aan staan, en houdt rekening met de
+    activiteit van insecten. Gebruik standaardwaarden of pas ze aan om de configuratie naar wens te tweaken.
+  
+  domain: automation
+  input:
+    weather_buienradar:
+      name: Weersensor (weather.buienradar)
+      description: Selecteer de weather.buienradar sensor voor algemene weerdata.
+      selector:
+        entity:
+          domain: weather
+
+    min_temp:
+      name: Minimale temperatuur voor activatie (in °C)
+      description: >
+        Stel de minimumtemperatuur in waarbij insecten actief worden. Standaard is 20°C.
+        Insecten worden actiever bij hogere temperaturen.
+      default: 20
+      selector:
+        number:
+          min: 10
+          max: 35
+          unit_of_measurement: °C
+          mode: slider
+
+    max_temp:
+      name: Maximale temperatuur voor activatie (in °C)
+      description: >
+        Stel de maximumtemperatuur in waarbij insecten actief zijn. Standaard is 35°C.
+        Bij temperaturen boven 35°C worden insecten minder actief.
+      default: 35
+      selector:
+        number:
+          min: 20
+          max: 45
+          unit_of_measurement: °C
+          mode: slider
+
+    min_humidity:
+      name: Minimale luchtvochtigheid voor activatie (in %)
+      description: >
+        Stel de minimum luchtvochtigheid in waarbij insecten actief worden. Standaard is >60%.
+        Hogere luchtvochtigheid trekt insecten aan.
+      default: 60
+      selector:
+        number:
+          min: 40
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+
+    uv_sensor:
+      name: UV-Straling sensor
+      description: Selecteer de sensor die de UV-straling meet.
+      selector:
+        entity:
+          domain: sensor
+
+    min_uv:
+      name: Minimale UV-straling voor activatie (W/m²)
+      description: >
+        Stel de minimum UV-straling in waarbij de insectenlamp wordt geactiveerd. Hogere UV-straling
+        kan insecten actiever maken. Standaardwaarde is 200 W/m².
+      default: 200
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: "W/m²"
+          mode: slider
+
+    rainfall_sensor:
+      name: Regenintensiteit sensor
+      description: Selecteer de sensor die de regenintensiteit meet.
+      selector:
+        entity:
+          domain: sensor
+
+    max_rain:
+      name: Maximale regenintensiteit (mm/h) voor activatie
+      description: >
+        Bepaal de maximale regenval waarbij de insectenlamp nog ingeschakeld wordt.
+        Bij hevige regenval worden insecten minder actief. Standaardwaarde is 0.5 mm/h.
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 10
+          unit_of_measurement: "mm/h"
+          mode: slider
+
+    seasonal_mode:
+      name: Seizoensmodus
+      description: >
+        Kies of de insectenlamp in zomer- of wintermodus moet werken. In de zomer zijn insecten actiever,
+        in de winter minder.
+      default: 'Zomerstand'
+      selector:
+        select:
+          options:
+            - 'Zomerstand'
+            - 'Winterstand'
+
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: >
+        Schakel de vakantiemodus in. Als deze modus is ingeschakeld, blijven de insectenlampen uit,
+        tenzij er beweging wordt gedetecteerd.
+      selector:
+        entity:
+          domain: input_boolean
+
+    movement_sensor:
+      name: Bewegingssensor
+      description: Selecteer de sensor die beweging detecteert.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    insect_lamp_duration:
+      name: Tijd dat de lamp aan blijft (in minuten)
+      description: >
+        Stel de duur in dat de insectenlamp aanblijft wanneer deze geactiveerd wordt. Het advies is
+        15 minuten per activatie om energie te besparen.
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 60
+          unit_of_measurement: "minuten"
+          mode: slider
+
+    insect_lamp_cycles:
+      name: Aantal activatiecycli per avond
+      description: >
+        Stel in hoe vaak de insectenlamp per avond geactiveerd moet worden. Het advies is 4 keer
+        per avond om insecten effectief te bestrijden.
+      default: 4
+      selector:
+        number:
+          min: 1
+          max: 10
+          unit_of_measurement: "cycli"
+          mode: slider
+
+automation:
+  trigger:
+    - platform: state
+      entity_id: !input weather_buienradar
+      attribute: temperature
+  condition:
+    - condition: numeric_state
+      entity_id: !input weather_buienradar
+      attribute: temperature
+      above: !input min_temp
+      below: !input max_temp
+    - condition: numeric_state
+      entity_id: !input weather_buienradar
+      attribute: humidity
+      above: !input min_humidity
+    - condition: numeric_state
+      entity_id: !input rainfall_sensor
+      below: !input max_rain
+  action:
+    - service: homeassistant.turn_on
+      entity_id: !input movement_sensor
+    - service: timer.start
+      data:
+        entity_id: timer.noodbediening_insectenlamp_timer
+        duration: !input insect_lamp_duration
+    - repeat:
+        count: !input insect_lamp_cycles
+        sequence:
+          - delay: "00:30:00" # 30 minuten pauze tussen cycli
+          - service: homeassistant.turn_on
+            entity_id: !input movement_sensor
