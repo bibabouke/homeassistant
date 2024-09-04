@@ -1,122 +1,208 @@
 blueprint:
-  name: Insectenlampen Automatisering met Buienradar
-  description: Automatisering voor insectenlampen met buienradar en noodbediening.
+  name: Insectenlamp Automatisering
+  description: Automatisering voor het in- en uitschakelen van insectenlampen op basis van weersomstandigheden, seizoensinstellingen en andere optionele parameters.
   domain: automation
   input:
     insectenlamp:
-      name: Insectenlamp Entiteit
+      name: Insectenlamp
+      description: De entiteit van de insectenlamp die je wilt automatiseren.
       selector:
         entity:
           domain: switch
-    noodbediening:
-      name: Noodbediening Insectenlampen
-      selector:
-        entity:
-          domain: input_boolean
-    timer:
-      name: Noodbediening Timer
-      selector:
-        entity:
-          domain: timer
-    weather_sensor:
+    buienradar_sensor:
       name: Buienradar Weer Sensor
+      description: De entiteit van de buienradar weer sensor voor weersomstandigheden.
       selector:
         entity:
-          domain: sensor
-    uv_sensor:
-      name: UV Sensor
-      selector:
-        entity:
-          domain: sensor
-    grondtemperatuur_sensor:
-      name: Grondtemperatuur Sensor
-      selector:
-        entity:
-          domain: sensor
-    bewegingssensor:
+          domain: weather
+    beweging_sensor:
       name: Bewegingssensor
+      description: Optionele bewegingssensor die detecteert of er beweging is in de buurt van de insectenlamp.
       selector:
         entity:
           domain: binary_sensor
     vakantieschakelaar:
       name: Vakantieschakelaar
+      description: Optionele schakelaar die aangeeft of je op vakantie bent.
       selector:
         entity:
           domain: input_boolean
     seizoensmodus:
       name: Seizoensmodus
+      description: Optionele schakelaar om de seizoensmodus in te stellen (zomer of winter).
       selector:
         entity:
           domain: input_select
     app_aanwezigheid:
-      name: Home Assistant App Aanwezigheid
+      name: Automatische Aanwezigheidsdetectie
+      description: Optionele aanwezigheidssensor gebaseerd op Home Assistant app.
       selector:
         entity:
-          domain: person
-    handmatige_aanwezigheidsdetectie:
-      name: Beeldscherm Monitor Schakelaar
+          domain: device_tracker
+    handmatige_aanwezigheid:
+      name: Handmatige Aanwezigheidsdetectie
+      description: Optionele handmatige aanwezigheidssensor (bijvoorbeeld een beeldscherm schakelaar).
       selector:
         entity:
-          domain: switch
+          domain: binary_sensor
+    noodbediening:
+      name: Noodbediening Insectenlampen
+      description: Schakelaar voor noodbediening van de insectenlampen.
+      selector:
+        entity:
+          domain: input_boolean
+    noodbediening_timer:
+      name: Timer Noodbediening
+      description: Timer voor noodbediening van insectenlampen (in minuten).
+      selector:
+        number:
+          min: 1
+          max: 120
+          step: 1
+          unit_of_measurement: minuten
+          mode: box
+          default: 60
+    temperatuur_min:
+      name: Minimale Temperatuur
+      description: Minimale temperatuur waarbij de lampen actief worden (in °C).
+      selector:
+        number:
+          min: 0
+          max: 40
+          step: 0.1
+          unit_of_measurement: °C
+          mode: box
+          default: 20
+    temperatuur_max:
+      name: Maximale Temperatuur
+      description: Maximale temperatuur waarbij de lampen actief worden (in °C).
+      selector:
+        number:
+          min: 0
+          max: 40
+          step: 0.1
+          unit_of_measurement: °C
+          mode: box
+          default: 35
+    luchtvochtigheid_min:
+      name: Minimale Luchtvochtigheid
+      description: Minimale luchtvochtigheid waarbij de lampen actief worden (%).
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: %
+          mode: box
+          default: 50
+    luchtvochtigheid_max:
+      name: Maximale Luchtvochtigheid
+      description: Maximale luchtvochtigheid waarbij de lampen actief worden (%).
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: %
+          mode: box
+          default: 80
+    uv_min:
+      name: Minimale UV Straling
+      description: Minimale UV straling waarbij de lampen actief worden (in W/m²).
+      selector:
+        number:
+          min: 0
+          max: 500
+          step: 1
+          unit_of_measurement: W/m²
+          mode: box
+          default: 150
+    uv_max:
+      name: Maximale UV Straling
+      description: Maximale UV straling waarbij de lampen actief worden (in W/m²).
+      selector:
+        number:
+          min: 0
+          max: 500
+          step: 1
+          unit_of_measurement: W/m²
+          mode: box
+          default: 300
 
 trigger:
-  - platform: state
-    entity_id: !input 'insectenlamp'
-    to: 'on'
+  - platform: time_pattern
+    minutes: '/15'  # Controleer elke 15 minuten
 
 condition:
-  - condition: and
-    conditions:
-      - condition: state
-        entity_id: !input 'noodbediening'
-        state: 'off'
-      - condition: numeric_state
-        entity_id: !input 'weather_sensor'
-        attribute: humidity
-        above: 50
-        below: 80
-      - condition: numeric_state
-        entity_id: !input 'weather_sensor'
-        attribute: temperature
-        above: 20
-        below: 35
-      - condition: numeric_state
-        entity_id: !input 'uv_sensor'
-        above: 200
-        below: 300
-      - condition: template
-        value_template: >
-          {% set temp = state_attr('sensor.weather_buienradar', 'temperature') %}
-          {% set humidity = state_attr('sensor.weather_buienradar', 'humidity') %}
-          {% set uv = state_attr('sensor.uv_sensor', 'value') %}
-          {% if temp is not none and humidity is not none and uv is not none %}
-            {% if (temp < 20 or temp > 35) or (humidity < 50 or humidity > 80) or (uv < 200 or uv > 300) %}
-              {{ true }}
-            {% else %}
-              {{ false }}
-            {% endif %}
+  - condition: state
+    entity_id: !input 'noodbediening'
+    state: 'off'
+  - condition: template
+    value_template: >
+      {% set temp = state_attr(!input 'buienradar_sensor', 'temperature') %}
+      {% set humidity = state_attr(!input 'buienradar_sensor', 'humidity') %}
+      {% set uv = state_attr(!input 'buienradar_sensor', 'uv') %}
+      {% set now = now() %}
+      {% set current_hour = now.hour %}
+      {% set season = state_attr(!input 'seizoensmodus', 'state') %}
+      {% set holiday_mode = state_attr(!input 'vakantieschakelaar', 'state') %}
+      {% set app_presence = state_attr(!input 'app_aanwezigheid', 'state') %}
+      {% set manual_presence = state_attr(!input 'handmatige_aanwezigheid', 'state') %}
+
+      {% if holiday_mode == 'on' %}
+        false
+      {% elif temp is not none and humidity is not none and uv is not none %}
+        {% set min_temp = (input_number.temperatuur_min | int) %}
+        {% set max_temp = (input_number.temperatuur_max | int) %}
+        {% set min_humidity = (input_number.luchtvochtigheid_min | int) %}
+        {% set max_humidity = (input_number.luchtvochtigheid_max | int) %}
+        {% set min_uv = (input_number.uv_min | int) %}
+        {% set max_uv = (input_number.uv_max | int) %}
+
+        {% if (temp >= min_temp and temp <= max_temp) and (humidity >= min_humidity and humidity <= max_humidity) and (uv >= min_uv and uv <= max_uv) %}
+          {% if season == 'summer' or season == 'muggenperiode' %}
+            true
+          {% elif season == 'winter' %}
+            false
           {% else %}
-            {{ false }}
+            false
           {% endif %}
+        {% else %}
+          false
+        {% endif %}
+      {% else %}
+        false
+      {% endif %}
 
 action:
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input 'vakantieschakelaar'
-            state: 'off'
-          - condition: state
-            entity_id: !input 'seizoensmodus'
-            state: 'zomer'
-        sequence:
-          - service: switch.turn_on
-            target:
-              entity_id: !input 'insectenlamp'
-      - conditions:
-          - condition: state
-            entity_id: !input 'vakantieschakelaar'
+            entity_id: !input 'noodbediening'
             state: 'on'
         sequence:
           - service: switch.turn_off
             target:
               entity_id: !input 'insectenlamp'
+          - service: timer.start
+            target:
+              entity_id: timer.insectenlamp.noodbediening_timer
+            data:
+              duration: "{{ (input_number.noodbediening_timer | int) * 60 }}"
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'true' }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'insectenlamp'
+          - service: timer.start
+            target:
+              entity_id: timer.insectenlamp.noodbediening_timer
+            data:
+              duration: "{{ (input_number.noodbediening_timer | int) * 60 }}"
+
+    - service: switch.turn_off
+      target:
+        entity_id: !input 'insectenlamp'
