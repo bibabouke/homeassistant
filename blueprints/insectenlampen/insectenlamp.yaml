@@ -1,0 +1,218 @@
+blueprint:
+  name: Insectenlamp Automatisering
+  description: >
+    Automatische bediening van insectenlampen op basis van temperatuur, luchtvochtigheid, UV-straling,
+    neerslag en beweging. Lampen worden alleen ingeschakeld onder gunstige omstandigheden
+    en met een geoptimaliseerd schema voor korte activaties.
+
+  domain: automation
+  input:
+    weather_buienradar:
+      name: Weersensor (weather.buienradar) [Optioneel]
+      description: Selecteer de weather.buienradar sensor voor algemene weerdata. Optioneel, alleen gebruiken als beschikbaar.
+      selector:
+        entity:
+          domain: weather
+          multiple: false
+          optional: true
+
+    min_temp:
+      name: Minimale temperatuur voor activatie (in °C)
+      description: >
+        Stel de minimumtemperatuur in waarbij insecten actief worden. Standaard is 20°C.
+        Insecten worden actiever bij hogere temperaturen.
+      default: 20
+      selector:
+        number:
+          min: 10
+          max: 35
+          unit_of_measurement: °C
+          mode: slider
+
+    max_temp:
+      name: Maximale temperatuur voor activatie (in °C)
+      description: >
+        Stel de maximumtemperatuur in waarbij insecten actief zijn. Standaard is 35°C.
+        Bij temperaturen boven 35°C worden insecten minder actief.
+      default: 35
+      selector:
+        number:
+          min: 20
+          max: 45
+          unit_of_measurement: °C
+          mode: slider
+
+    min_humidity:
+      name: Minimale luchtvochtigheid voor activatie (in %)
+      description: >
+        Stel de minimum luchtvochtigheid in waarbij insecten actief worden. Standaard is >60%.
+        Hogere luchtvochtigheid trekt insecten aan.
+      default: 60
+      selector:
+        number:
+          min: 40
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+
+    uv_sensor:
+      name: UV-Straling sensor [Optioneel]
+      description: Selecteer de sensor die de UV-straling meet. Optioneel, alleen gebruiken als beschikbaar.
+      selector:
+        entity:
+          domain: sensor
+          multiple: false
+          optional: true
+
+    min_uv:
+      name: Minimale UV-straling voor activatie (W/m²)
+      description: >
+        Stel de minimum UV-straling in waarbij de insectenlamp wordt geactiveerd. Hogere UV-straling
+        kan insecten actiever maken. Standaardwaarde is 200 W/m².
+      default: 200
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: "W/m²"
+          mode: slider
+
+    rainfall_sensor:
+      name: Neerslagintensiteit sensor [Optioneel]
+      description: Selecteer de sensor die de neerslagintensiteit meet. Optioneel, alleen gebruiken als beschikbaar.
+      selector:
+        entity:
+          domain: sensor
+          multiple: false
+          optional: true
+
+    max_rain:
+      name: Maximale neerslagintensiteit (mm/h) voor activatie
+      description: >
+        Bepaal de maximale regenval waarbij de insectenlamp nog ingeschakeld wordt.
+        Bij hevige regenval worden insecten minder actief. Standaardwaarde is 0.5 mm/h.
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 10
+          unit_of_measurement: "mm/h"
+          mode: slider
+
+    insect_lamp:
+      name: Insectenlamp [Verplicht]
+      description: Selecteer de entiteit van de insectenlamp die aan- en uitgeschakeld moet worden.
+      selector:
+        entity:
+          domain: switch
+
+    seasonal_mode:
+      name: Seizoensmodus
+      description: >
+        Kies of de insectenlamp in zomer- of wintermodus moet werken. In de zomer zijn insecten actiever,
+        in de winter minder.
+      default: 'Zomerstand'
+      selector:
+        select:
+          options:
+            - 'Zomerstand'
+            - 'Winterstand'
+
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: >
+        Schakel de vakantiemodus in. Als deze modus is ingeschakeld, blijven de insectenlampen uit,
+        tenzij er beweging wordt gedetecteerd.
+      selector:
+        entity:
+          domain: input_boolean
+
+    movement_sensors:
+      name: Bewegingssensoren [Optioneel, Meerdere mogelijk]
+      description: Selecteer een of meerdere bewegingssensoren die detecteren of er beweging is.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+          optional: true
+
+    insect_lamp_duration:
+      name: Tijd dat de lamp aan blijft (in minuten)
+      description: >
+        Stel de duur in dat de insectenlamp aanblijft wanneer deze geactiveerd wordt. Het advies is
+        15 minuten per activatie om energie te besparen.
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 60
+          unit_of_measurement: "minuten"
+          mode: slider
+
+    insect_lamp_cycles:
+      name: Aantal activatiecycli per avond
+      description: >
+        Stel in hoe vaak de insectenlamp per avond geactiveerd moet worden. Het advies is 4 keer
+        per avond om insecten effectief te bestrijden.
+      default: 4
+      selector:
+        number:
+          min: 1
+          max: 10
+          unit_of_measurement: "cycli"
+          mode: slider
+
+variables:
+  weather_entity: !input weather_buienradar
+  uv_entity: !input uv_sensor
+  rain_entity: !input rainfall_sensor
+  movement_sensors: !input movement_sensors
+
+trigger:
+  - platform: state
+    entity_id: !input insect_lamp
+
+condition:
+  - condition: template
+    value_template: >
+      {% set temp = states(weather_entity) | float %}
+      {% set humidity = state_attr(weather_entity, 'humidity') | float %}
+      {% if uv_entity %}
+        {% set uv = states(uv_entity) | float %}
+      {% else %}
+        {% set uv = 0 %}
+      {% endif %}
+      {% if rain_entity %}
+        {% set rain = states(rain_entity) | float %}
+      {% else %}
+        {% set rain = 0 %}
+      {% endif %}
+      {% if temp >= !input min_temp and temp <= !input max_temp %}
+        {% if humidity >= !input min_humidity %}
+          {% if uv >= !input min_uv or uv == 0 %}
+            {% if rain <= !input max_rain %}
+              true
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
+
+action:
+  - service: homeassistant.turn_on
+    target:
+      entity_id: !input insect_lamp
+  - delay: "{{ !input insect_lamp_duration * 60 }}"
+  - service: homeassistant.turn_off
+    target:
+      entity_id: !input insect_lamp
+  - repeat:
+      count: !input insect_lamp_cycles
+      sequence:
+        - delay: "00:30:00" # 30 minuten pauze tussen cycli
+        - service: homeassistant.turn_on
+          target:
+            entity_id: !input insect_lamp
+        - delay: "{{ !input insect_lamp_duration * 60 }}"
+        - service: homeassistant.turn_off
+          target:
+            entity_id: !input insect_lamp
