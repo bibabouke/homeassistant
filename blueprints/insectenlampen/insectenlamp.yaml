@@ -8,11 +8,26 @@ blueprint:
   domain: automation
   input:
     weather_buienradar:
-      name: Weersensor (weather.buienradar) [Optioneel]
-      description: Selecteer de weather.buienradar sensor voor algemene weerdata. Optioneel, alleen gebruiken als beschikbaar.
+      name: Weersensor (weather.buienradar) [Verplicht]
+      description: Selecteer de weather.buienradar sensor voor algemene weerdata.
       selector:
         entity:
           domain: weather
+          multiple: false
+
+    insect_lamp:
+      name: Insectenlamp 1 [Verplicht]
+      description: Selecteer de eerste insectenlamp die je wilt aansturen.
+      selector:
+        entity:
+          domain: switch
+
+    insect_lamp_2:
+      name: Insectenlamp 2 [Optioneel]
+      description: Selecteer een tweede insectenlamp indien je meerdere lampen wilt aansturen.
+      selector:
+        entity:
+          domain: switch
           multiple: false
           optional: true
 
@@ -62,7 +77,6 @@ blueprint:
         entity:
           domain: sensor
           multiple: false
-          optional: true
 
     min_uv:
       name: Minimale UV-straling voor activatie (W/m²)
@@ -84,7 +98,6 @@ blueprint:
         entity:
           domain: sensor
           multiple: false
-          optional: true
 
     max_rain:
       name: Maximale neerslagintensiteit (mm/h) voor activatie
@@ -99,34 +112,6 @@ blueprint:
           unit_of_measurement: "mm/h"
           mode: slider
 
-    insect_lamp:
-      name: Insectenlamp [Verplicht]
-      description: Selecteer de entiteit van de insectenlamp die aan- en uitgeschakeld moet worden.
-      selector:
-        entity:
-          domain: switch
-
-    seasonal_mode:
-      name: Seizoensmodus
-      description: >
-        Kies of de insectenlamp in zomer- of wintermodus moet werken. In de zomer zijn insecten actiever,
-        in de winter minder.
-      default: 'Zomerstand'
-      selector:
-        select:
-          options:
-            - 'Zomerstand'
-            - 'Winterstand'
-
-    vacation_mode:
-      name: Vakantieschakelaar
-      description: >
-        Schakel de vakantiemodus in. Als deze modus is ingeschakeld, blijven de insectenlampen uit,
-        tenzij er beweging wordt gedetecteerd.
-      selector:
-        entity:
-          domain: input_boolean
-
     movement_sensors:
       name: Bewegingssensoren [Optioneel, Meerdere mogelijk]
       description: Selecteer een of meerdere bewegingssensoren die detecteren of er beweging is.
@@ -134,7 +119,6 @@ blueprint:
         entity:
           domain: binary_sensor
           multiple: true
-          optional: true
 
     insect_lamp_duration:
       name: Tijd dat de lamp aan blijft (in minuten)
