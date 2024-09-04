@@ -1,1 +1,219 @@
+blueprint:
+  name: Automatisering Insectenverdelger Lampen
+  description: Automatisering voor insectenverdelger lampen op basis van weersomstandigheden, tijdsblokken, en aanwezigheid.
+  domain: automation
+  input:
+    insectenlamp_1:
+      name: Insectenlamp Keuken
+      description: Entiteit van de insectenlamp in de keuken
+      selector:
+        entity:
+          domain: switch
+      default: ""
+    insectenlamp_2:
+      name: Insectenlamp Kantoorruimte
+      description: Entiteit van de insectenlamp in de kantoorruimte
+      selector:
+        entity:
+          domain: switch
+      default: ""
+    weer_sensor:
+      name: Buienradar Weersensor
+      description: Selecteer de Buienradar sensor voor weersomstandigheden
+      selector:
+        entity:
+          domain: weather
+      default: ""
+    knop_beeldscherm:
+      name: Beeldscherm Aan/Uit Knop (Optioneel)
+      description: Entiteit van de knop die het beeldscherm inschakelt
+      selector:
+        entity:
+          domain: switch
+      default: ""
+    bewegingssensor_keuken:
+      name: Bewegingssensor Keuken (Optioneel)
+      description: Bewegingssensor nabij de keuken
+      selector:
+        entity:
+          domain: binary_sensor
+      default: ""
+    bewegingssensor_kantoor:
+      name: Bewegingssensor Kantoor Overloop (Optioneel)
+      description: Bewegingssensor nabij de kantoorruimte
+      selector:
+        entity:
+          domain: binary_sensor
+      default: ""
+    aanwezigheidssensor:
+      name: Aanwezigheidsdetectie (Optioneel)
+      description: Gebruik Home Assistant app voor aanwezigheid van bewoners
+      selector:
+        entity:
+          domain: person
+          multiple: true
+      default: []
+    vakantie_mode:
+      name: Vakantiemodus Schakelaar
+      description: Schakelaar om de vakantiemodus in of uit te schakelen
+      selector:
+        entity:
+          domain: input_boolean
+    seizoen_mode:
+      name: Seizoensmodus Schakelaar
+      description: Schakelaar om de seizoensmodus (zomer/winter) in te stellen
+      selector:
+        entity:
+          domain: input_boolean
+    ochtend_schakeltijd:
+      name: Ochtend Schakeltijd
+      description: Tijdstip waarop de ochtendperiode begint
+      default: "06:00:00"
+      selector:
+        time:
+    middag_schakeltijd:
+      name: Middag Schakeltijd
+      description: Tijdstip waarop de middagperiode begint
+      default: "12:00:00"
+      selector:
+        time:
+    avond_schakeltijd:
+      name: Avond Schakeltijd
+      description: Tijdstip waarop de avondperiode begint
+      default: "18:00:00"
+      selector:
+        time:
+    nacht_schakeltijd:
+      name: Nacht Schakeltijd
+      description: Tijdstip waarop de nachtperiode begint
+      default: "22:00:00"
+      selector:
+        time:
+    uv_index_drempel:
+      name: UV-index drempelwaarde
+      description: Maximale UV-index om de lampen te activeren
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 11
+          step: 1
+          unit_of_measurement: "UV-index"
+    luchtvochtigheid_drempel:
+      name: Luchtvochtigheid drempelwaarde
+      description: Minimale luchtvochtigheid om de lampen te activeren
+      default: 60
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+    temperatuur_drempel:
+      name: Temperatuur drempelwaarde
+      description: Minimale temperatuur om de lampen te activeren
+      default: 15
+      selector:
+        number:
+          min: -10
+          max: 50
+          step: 1
+          unit_of_measurement: "°C"
+    max_aan_tijd:
+      name: Maximale Aanstaatijd
+      description: Maximale tijd dat de lampen aan mogen blijven
+      default: 120
+      selector:
+        number:
+          min: 5
+          max: 240
+          step: 5
+          unit_of_measurement: "minuten"
+
+trigger:
+  - platform: time
+    at:
+      - !input ochtend_schakeltijd
+      - !input middag_schakeltijd
+      - !input avond_schakeltijd
+      - !input nacht_schakeltijd
+
+condition:
+  - condition: state
+    entity_id: !input vakantie_mode
+    state: "off"
+  - condition: template
+    value_template: >
+      {% set uv_index_drempel = states('input_number.uv_index_drempel') | float %}
+      {% set luchtvochtigheid_drempel = states('input_number.luchtvochtigheid_drempel') | float %}
+      {% set temperatuur_drempel = states('input_number.temperatuur_drempel') | float %}
+      {% set uv_index = states('sensor.uv_index') | float(0) %}
+      {% set humidity = states('sensor.humidity') | float(0) %}
+      {% set temperature = states('sensor.temperature') | float(0) %}
+      {{ uv_index < uv_index_drempel and humidity > luchtvochtigheid_drempel and temperature > temperatuur_drempel }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: time
+            after: !input ochtend_schakeltijd
+            before: !input middag_schakeltijd
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ !input.insectenlamp_1 if !input.insectenlamp_1 != '' else !input.insectenlamp_2 }}"
+          - delay:
+              minutes: !input max_aan_tijd
+          - service: switch.turn_off
+            target:
+              entity_id: "{{ !input.insectenlamp_1 if !input.insectenlamp_1 != '' else !input.insectenlamp_2 }}"
+      - conditions:
+          - condition: time
+            after: !input middag_schakeltijd
+            before: !input avond_schakeltijd
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: >
+                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
+                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
+          - delay:
+              minutes: !input max_aan_tijd
+          - service: switch.turn_off
+            target:
+              entity_id: >
+                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
+                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
+      - conditions:
+          - condition: time
+            after: !input avond_schakeltijd
+            before: !input nacht_schakeltijd
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: >
+                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
+                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
+          - delay:
+              minutes: !input max_aan_tijd
+          - service: switch.turn_off
+            target:
+              entity_id: >
+                {% if !input.insectenlamp_1 != '' %}{{ !input.insectenlamp_1 }}{% endif %}
+                {% if !input.insectenlamp_2 != '' %}{{ !input.insectenlamp_2 }}{% endif %}
+      - conditions:
+          - condition: time
+            after: !input nacht_schakeltijd
+            before: "00:00:00"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input insectenlamp_2
+          - delay:
+              minutes: !input max_aan_tijd
+          - service: switch.turn_off
+            target:
+              entity_id: !input insectenlamp_2
+
+mode: restart
 
