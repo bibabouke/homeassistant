@@ -1,0 +1,126 @@
+blueprint:
+  name: Insectenlamp Automatisering
+  description: Automatisering voor het aansteken van insectenlampen op basis van weersomstandigheden, beweging en aanwezigheid.
+  domain: automation
+  input:
+    weather_sensor:
+      name: Weer Sensor
+      description: De sensor die de weersomstandigheden meet, zoals temperatuur en luchtvochtigheid.
+      selector:
+        entity:
+          domain: weather
+    beweging_sensor:
+      name: Bewegingssensor
+      description: De sensor die beweging detecteert.
+      selector:
+        entity:
+          domain: binary_sensor
+    vakantieschakelaar:
+      name: Vakantieschakelaar
+      description: Schakelaar om aan te geven of je op vakantie bent.
+      selector:
+        entity:
+          domain: switch
+    seizoensmodus_schakelaar:
+      name: Seizoensmodus Schakelaar
+      description: Schakelaar voor het instellen van de seizoensmodus (zomer of winter).
+      selector:
+        entity:
+          domain: switch
+    manual_presence_sensor:
+      name: Handmatige Aanwezigheidsdetectie
+      description: Schakelaar voor handmatige aanwezigheid, zoals een beeldschermmonitor.
+      selector:
+        entity:
+          domain: binary_sensor
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: Schakelaar om de vakantiesituatie in te stellen.
+      selector:
+        entity:
+          domain: switch
+    uv_sensor:
+      name: UV Sensor
+      description: Sensor voor UV-straling. Optioneel in te voeren voor extra controle.
+      selector:
+        entity:
+          domain: sensor
+    grondtemperatuur_sensor:
+      name: Grondtemperatuur Sensor
+      description: Sensor voor grondtemperatuur. Optioneel voor extra nauwkeurigheid.
+      selector:
+        entity:
+          domain: sensor
+    neerslagintensiteit_sensor:
+      name: Neerslagintensiteit Sensor
+      description: Sensor voor neerslagintensiteit. Optioneel voor betere weersomstandigheden.
+      selector:
+        entity:
+          domain: sensor
+    neerslagverwachting_sensor:
+      name: Neerslagverwachting Sensor
+      description: Sensor voor neerslagverwachting. Optioneel voor toekomstige weersomstandigheden.
+      selector:
+        entity:
+          domain: sensor
+    lamp:
+      name: Insectenlamp
+      description: De insectenlamp die geautomatiseerd wordt.
+      selector:
+        entity:
+          domain: switch
+
+  variables:
+    temp_min: 20
+    temp_max: 35
+    humidity_min: 60
+    uv_min: 200
+    grondtemp_min: 15
+    neerslagintensiteit_max: 5
+    neerslagverwachting_max: 10
+
+  trigger:
+    platform: state
+    entity_id: !input 'weather_sensor'
+    attribute: temperature
+    to: 'on'
+    
+  condition:
+    - condition: numeric_state
+      entity_id: !input 'weather_sensor'
+      attribute: temperature
+      above: !input 'temp_min'
+      below: !input 'temp_max'
+    - condition: numeric_state
+      entity_id: !input 'weather_sensor'
+      attribute: humidity
+      above: !input 'humidity_min'
+    - condition: state
+      entity_id: !input 'vakantieschakelaar'
+      state: 'off'
+    - condition: state
+      entity_id: !input 'seizoensmodus_schakelaar'
+      state: 'on'
+
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: !input 'beweging_sensor'
+              state: 'on'
+            - condition: numeric_state
+              entity_id: !input 'weather_sensor'
+              attribute: uv
+              above: !input 'uv_min'
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input 'lamp'
+            - delay: '00:05:00'  # Lamp blijft 5 minuten aan
+            - service: switch.turn_off
+              target:
+                entity_id: !input 'lamp'
+      default:
+        - service: switch.turn_off
+          target:
+            entity_id: !input 'lamp'
