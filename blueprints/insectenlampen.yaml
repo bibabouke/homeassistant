@@ -230,7 +230,7 @@ automation:
                 - condition: state
                   entity_id: !input 'beweging_sensor'
                   state: 'on'
-  
+
   action:
     - choose:
         - conditions:
@@ -266,5 +266,5 @@ automation:
             - service: switch.turn_on
               target:
                 entity_id: !input 'insectenlamp'
-  
+
   mode: single
