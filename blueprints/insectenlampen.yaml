@@ -1,247 +1,270 @@
 blueprint:
-  name: Insectenlamp Automatisering
-  description: Automatisering van insectenlampen op basis van weergegevens en tijdsinstellingen.
+  name: Insectenlampen Automatisering
+  description: Automatiseert de werking van insectenlampen op basis van verschillende sensoren en instellingen.
   domain: automation
   input:
     insectenlamp:
       name: Insectenlamp
-      description: De entiteit van de insectenlamp.
+      description: De insectenlamp die je wilt automatiseren.
       selector:
         entity:
           domain: switch
 
-    buienradar_sensor:
-      name: Buienradar Weer Sensor
-      description: De weer sensor van Buienradar.
+    weather_sensor:
+      name: Weer Sensor
+      description: De weer sensor voor buienradar.
       selector:
         entity:
           domain: weather
 
-    sensor_uv:
-      name: UV Straling Sensor
-      description: De UV-stralingssensor van Buienradar (optioneel).
-      selector:
-        entity:
-          domain: sensor
-
-    sensor_grondtemperatuur:
-      name: Grondtemperatuur Sensor
-      description: De grondtemperatuur sensor van Buienradar (optioneel).
-      selector:
-        entity:
-          domain: sensor
-
-    sensor_neerslagintensiteit:
-      name: Neerslagintensiteit Sensor
-      description: De neerslagintensiteit sensor van Buienradar (optioneel).
-      selector:
-        entity:
-          domain: sensor
-
-    sensor_neerslagverwachting:
-      name: Neerslagverwachting Sensor
-      description: De neerslagverwachting sensor van Buienradar (optioneel).
-      selector:
-        entity:
-          domain: sensor
-
-    bewegingssensor:
+    beweging_sensor:
       name: Bewegingssensor
-      description: De bewegingssensor die de aanwezigheid detecteert.
+      description: Bewegingssensor in de kamer.
       selector:
         entity:
           domain: binary_sensor
 
-    vakantie_modus:
-      name: Vakantie Modus
-      description: De schakelaar voor vakantie modus.
+    vakantieschakelaar:
+      name: Vakantieschakelaar
+      description: Schakelaar voor vakanties.
       selector:
         entity:
-          domain: input_boolean
+          domain: switch
 
-    seizoensmodus:
-      name: Seizoensmodus
-      description: De schakelaar voor seizoensmodus.
+    seizoensmodus_schakelaar:
+      name: Seizoensmodus Schakelaar
+      description: Schakelaar voor het instellen van seizoensmodus.
       selector:
         entity:
-          domain: input_select
+          domain: switch
 
-    app_aanwezigheid:
-      name: Automatische Aanwezigheidsdetectie
-      description: De aanwezigheidssensor van de Home Assistant app.
+    uv_straling_sensor:
+      name: UV Straling Sensor (optioneel)
+      description: Sensor voor UV-straling, indien beschikbaar.
       selector:
         entity:
-          domain: binary_sensor
+          domain: sensor
 
-    handmatige_aanwezigheid:
-      name: Handmatige Aanwezigheidsdetectie
-      description: De handmatige aanwezigheidssensor, zoals een beeldscherm schakelaar.
+    grondtemperatuur_sensor:
+      name: Grondtemperatuur Sensor (optioneel)
+      description: Sensor voor grondtemperatuur, indien beschikbaar.
       selector:
         entity:
-          domain: binary_sensor
+          domain: sensor
 
-    noodbediening:
-      name: Noodbediening Insectenlampen
-      description: De noodbediening voor de insectenlampen.
+    neerslagintensiteit_sensor:
+      name: Neerslagintensiteit Sensor (optioneel)
+      description: Sensor voor neerslagintensiteit, indien beschikbaar.
       selector:
         entity:
-          domain: input_boolean
+          domain: sensor
 
-    noodbediening_timer:
-      name: Noodbediening Timer
-      description: De timer voor noodbediening van insectenlampen.
+    neerslagverwachting_sensor:
+      name: Neerslagverwachting Sensor (optioneel)
+      description: Sensor voor neerslagverwachting, indien beschikbaar.
       selector:
         entity:
-          domain: timer
+          domain: sensor
 
-    # Instellingen voor de Weersensor
+    # Instellingen
     temperatuur_min:
-      name: Minimum Temperatuur
-      description: Minimum temperatuur voor het inschakelen van de lamp. Muggen en vliegen zijn actief bij temperaturen tussen 20°C en 35°C.
+      name: Minimale Temperatuur
+      description: Minimale temperatuur voor activering van de lampen.
       default: 20
       selector:
         number:
-          min: 10
-          max: 35
-          step: 1
-          unit_of_measurement: "°C"
+          min: 0
+          max: 50
+          unit_of_measurement: °C
 
     temperatuur_max:
-      name: Maximum Temperatuur
-      description: Maximum temperatuur voor het inschakelen van de lamp. Muggen en vliegen zijn actief bij temperaturen tussen 20°C en 35°C.
+      name: Maximale Temperatuur
+      description: Maximale temperatuur voor activering van de lampen.
       default: 35
       selector:
         number:
-          min: 10
-          max: 35
-          step: 1
-          unit_of_measurement: "°C"
+          min: 0
+          max: 50
+          unit_of_measurement: °C
 
     luchtvochtigheid_min:
-      name: Minimum Luchtvochtigheid
-      description: Minimum luchtvochtigheid voor het inschakelen van de lamp. Insecten worden vaak aangetrokken bij hogere luchtvochtigheden (bijv. boven 50%).
-      default: 50
+      name: Minimale Luchtvochtigheid
+      description: Minimale luchtvochtigheid voor activering van de lampen.
+      default: 60
       selector:
         number:
           min: 0
           max: 100
-          step: 1
-          unit_of_measurement: "%"
+          unit_of_measurement: %
 
     luchtvochtigheid_max:
-      name: Maximum Luchtvochtigheid
-      description: Maximum luchtvochtigheid voor het inschakelen van de lamp. Insecten kunnen actief zijn bij hoge luchtvochtigheid tot 90%.
+      name: Maximale Luchtvochtigheid
+      description: Maximale luchtvochtigheid voor activering van de lampen.
       default: 90
       selector:
         number:
           min: 0
           max: 100
-          step: 1
-          unit_of_measurement: "%"
+          unit_of_measurement: %
 
     uv_min:
-      name: Minimum UV Straling
-      description: Minimum UV-straling voor het inschakelen van de lamp. UV-straling trekt insecten aan. Stel de waarde in op basis van wat gebruikelijk is voor insectenactiviteit.
+      name: Minimale UV Straling
+      description: Minimale UV-straling om de lampen uit te schakelen.
       default: 200
       selector:
         number:
           min: 0
           max: 1000
-          step: 1
-          unit_of_measurement: "W/m²"
+          unit_of_measurement: W/m²
 
     uv_max:
-      name: Maximum UV Straling
-      description: Maximum UV-straling voor het inschakelen van de lamp. Hoge UV-waarden kunnen indicatief zijn voor actieve insecten.
-      default: 300
+      name: Maximale UV Straling
+      description: Maximale UV-straling om de lampen aan te zetten.
+      default: 800
       selector:
         number:
           min: 0
           max: 1000
-          step: 1
-          unit_of_measurement: "W/m²"
+          unit_of_measurement: W/m²
 
-    regen_min:
-      name: Minimum Neerslag
-      description: Minimum neerslag voor het inschakelen van de lamp. Neerslag kan insectenactiviteit beïnvloeden. Een waarde onder 0 kan worden ingesteld als er geen invloed is van regen.
-      default: 0
+    # Instellingen voor vakantieschakelaar
+    vakantieschakelaar_tijd:
+      name: Tijd aan tijdens vakantie
+      description: Tijd in minuten dat de lampen aan mogen zijn per dag tijdens de vakantie.
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: min
+
+    # Seizoensmodus
+    zomer_temperatuur_min:
+      name: Minimale Temperatuur Zomer
+      description: Minimale temperatuur voor zomermodus.
+      default: 20
+      selector:
+        number:
+          min: 0
+          max: 50
+          unit_of_measurement: °C
+
+    zomer_temperatuur_max:
+      name: Maximale Temperatuur Zomer
+      description: Maximale temperatuur voor zomermodus.
+      default: 35
+      selector:
+        number:
+          min: 0
+          max: 50
+          unit_of_measurement: °C
+
+    winter_temperatuur_max:
+      name: Maximale Temperatuur Winter
+      description: Maximale temperatuur voor wintermodus.
+      default: 19
+      selector:
+        number:
+          min: 0
+          max: 50
+          unit_of_measurement: °C
+
+    winter_luchtvochtigheid_max:
+      name: Maximale Luchtvochtigheid Winter
+      description: Maximale luchtvochtigheid voor wintermodus.
+      default: 60
       selector:
         number:
           min: 0
           max: 100
-          step: 0.1
-          unit_of_measurement: "mm"
+          unit_of_measurement: %
 
-    regen_max:
-      name: Maximum Neerslag
-      description: Maximum neerslag voor het inschakelen van de lamp. Neerslag kan insectenactiviteit beïnvloeden, dus het aanpassen op basis van regenhoeveelheden is belangrijk.
-      default: 10
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 0.1
-          unit_of_measurement: "mm"
+automation:
+  trigger:
+    - platform: state
+      entity_id: !input 'weather_sensor'
+      attribute: temperature
+    - platform: state
+      entity_id: !input 'weather_sensor'
+      attribute: humidity
+    - platform: state
+      entity_id: !input 'uv_straling_sensor'
+      attribute: value
+    - platform: state
+      entity_id: !input 'beweging_sensor'
+    - platform: state
+      entity_id: !input 'vakantieschakelaar'
+    - platform: state
+      entity_id: !input 'seizoensmodus_schakelaar'
 
-trigger:
-  - platform: state
-    entity_id: !input 'insectenlamp'
-    to: 'on'
-    id: 'insectenlamp_schakelaar'
-
-condition:
-  - condition: and
-    conditions:
-      - condition: template
-        value_template: >
-          {% set weather = states('weather.buienradar') %}
-          {% set temperature = weather.attributes.temperature | float %}
-          {% set humidity = weather.attributes.humidity | float %}
-          {% set mode = states('input_select.seizoensmodus') %}
-          
-          {% set uv_sensor = states('sensor_uv') if is_state('sensor_uv', 'on') else 0 %}
-          {% set uv = uv_sensor | float %}
-          
-          {% set ground_temp_sensor = states('sensor_grondtemperatuur') if is_state('sensor_grondtemperatuur', 'on') else 0 %}
-          {% set ground_temp = ground_temp_sensor | float %}
-          
-          {% set rain_intensity_sensor = states('sensor_neerslagintensiteit') if is_state('sensor_neerslagintensiteit', 'on') else 0 %}
-          {% set rain_intensity = rain_intensity_sensor | float %}
-          
-          {% set rain_forecast_sensor = states('sensor_neerslagverwachting') if is_state('sensor_neerslagverwachting', 'on') else 0 %}
-          {% set rain_forecast = rain_forecast_sensor | float %}
-          
-          {% if mode == 'Zomer' %}
-            {{ temperature >= (temperatuur_min | int) and temperature <= (temperatuur_max | int) and
-               humidity >= (luchtvochtigheid_min | int) and humidity <= (luchtvochtigheid_max | int) and
-               uv >= (uv_min | int) and uv <= (uv_max | int) and
-               rain_intensity <= (regen_max | int) and
-               rain_forecast <= (regen_max | int) }}
-          {% elif mode == 'Winter' %}
-            {{ temperature <= (temperatuur_max | int) and
-               humidity >= (luchtvochtigheid_min | int) and humidity <= (luchtvochtigheid_max | int) and
-               uv <= (uv_max | int) and
-               rain_intensity <= (regen_max | int) and
-               rain_forecast <= (regen_max | int) }}
-          {% else %}
-            {{ false }}
-          {% endif %}
-
-action:
-  - choose:
-      - conditions:
-          - condition: state
-            entity_id: !input 'noodbediening'
-            state: 'on'
-        sequence:
-          - service: switch.turn_off
-            target:
-              entity_id: !input 'insectenlamp'
-          - delay: '00:01:00'
-          - service: switch.turn_on
-            target:
-              entity_id: !input 'insectenlamp'
-    default:
-      - service: switch.turn_off
-        target:
-          entity_id: !input 'insectenlamp'
+  condition:
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: !input 'vakantieschakelaar'
+          state: 'on'
+        - condition: and
+          conditions:
+            - condition: numeric_state
+              entity_id: !input 'weather_sensor'
+              attribute: temperature
+              above: !input 'temperatuur_min'
+            - condition: numeric_state
+              entity_id: !input 'weather_sensor'
+              attribute: temperature
+              below: !input 'temperatuur_max'
+            - condition: numeric_state
+              entity_id: !input 'weather_sensor'
+              attribute: humidity
+              above: !input 'luchtvochtigheid_min'
+            - condition: numeric_state
+              entity_id: !input 'weather_sensor'
+              attribute: humidity
+              below: !input 'luchtvochtigheid_max'
+            - condition: or
+              conditions:
+                - condition: numeric_state
+                  entity_id: !input 'uv_straling_sensor'
+                  above: !input 'uv_min'
+                  below: !input 'uv_max'
+                - condition: state
+                  entity_id: !input 'beweging_sensor'
+                  state: 'on'
+  
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: !input 'vakantieschakelaar'
+              state: 'on'
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input 'insectenlamp'
+            - delay: !input 'vakantieschakelaar_tijd'
+            - service: switch.turn_off
+              target:
+                entity_id: !input 'insectenlamp'
+        - conditions:
+            - condition: state
+              entity_id: !input 'beweging_sensor'
+              state: 'on'
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input 'insectenlamp'
+            - delay:
+                minutes: 30  # Voorbeeld tijd, kan worden aangepast
+            - service: switch.turn_off
+              target:
+                entity_id: !input 'insectenlamp'
+        - conditions:
+            - condition: state
+              entity_id: !input 'seizoensmodus_schakelaar'
+              state: 'on'
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input 'insectenlamp'
+  
+  mode: single
