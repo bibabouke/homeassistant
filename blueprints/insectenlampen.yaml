@@ -3,6 +3,45 @@ blueprint:
   description: Automatiseert de werking van insectenlampen op basis van verschillende sensoren en instellingen.
   domain: automation
   input:
+    # Sensoren
+    weather_sensor:
+      name: Weer Sensor
+      description: De weer sensor voor het monitoren van temperatuur en luchtvochtigheid.
+      selector:
+        entity:
+          domain: weather
+    beweging_sensor:
+      name: Bewegingssensor
+      description: Bewegingssensor om te detecteren of er activiteit is in de kamer.
+      selector:
+        entity:
+          domain: binary_sensor
+    uv_straling_sensor:
+      name: UV Straling Sensor (optioneel)
+      description: Sensor voor UV-straling. Indien beschikbaar, helpt deze sensor te bepalen of de UV-straling binnen een gewenst bereik valt.
+      selector:
+        entity:
+          domain: sensor
+    grondtemperatuur_sensor:
+      name: Grondtemperatuur Sensor (optioneel)
+      description: Sensor voor het meten van de temperatuur van de grond. Dit kan helpen bij het beter begrijpen van de omgevingstemperatuur.
+      selector:
+        entity:
+          domain: sensor
+    neerslagintensiteit_sensor:
+      name: Neerslagintensiteit Sensor (optioneel)
+      description: Sensor voor het meten van neerslagintensiteit. Deze sensor is belangrijk om te weten of er neerslag is die de werking van de lamp kan beïnvloeden.
+      selector:
+        entity:
+          domain: sensor
+    neerslagverwachting_sensor:
+      name: Neerslagverwachting Sensor (optioneel)
+      description: Sensor voor neerslagverwachting. Dit helpt bij het inschatten van toekomstige weersomstandigheden.
+      selector:
+        entity:
+          domain: sensor
+
+    # Instellingen
     insectenlamp:
       name: Insectenlamp
       description: De insectenlamp die je wilt automatiseren.
@@ -10,66 +49,23 @@ blueprint:
         entity:
           domain: switch
 
-    weather_sensor:
-      name: Weer Sensor
-      description: De weer sensor voor buienradar.
-      selector:
-        entity:
-          domain: weather
-
-    beweging_sensor:
-      name: Bewegingssensor
-      description: Bewegingssensor in de kamer.
-      selector:
-        entity:
-          domain: binary_sensor
-
     vakantieschakelaar:
       name: Vakantieschakelaar
-      description: Schakelaar voor vakanties.
+      description: Schakelaar die aangeeft of je op vakantie bent. Tijdens vakantie kan een andere werking van de lampen vereist zijn.
       selector:
         entity:
           domain: switch
 
     seizoensmodus_schakelaar:
       name: Seizoensmodus Schakelaar
-      description: Schakelaar voor het instellen van seizoensmodus.
+      description: Schakelaar om de seizoensmodus in te stellen (zomer of winter). Dit beïnvloedt hoe de sensoren reageren op temperatuur en luchtvochtigheid.
       selector:
         entity:
           domain: switch
 
-    uv_straling_sensor:
-      name: UV Straling Sensor (optioneel)
-      description: Sensor voor UV-straling, indien beschikbaar.
-      selector:
-        entity:
-          domain: sensor
-
-    grondtemperatuur_sensor:
-      name: Grondtemperatuur Sensor (optioneel)
-      description: Sensor voor grondtemperatuur, indien beschikbaar.
-      selector:
-        entity:
-          domain: sensor
-
-    neerslagintensiteit_sensor:
-      name: Neerslagintensiteit Sensor (optioneel)
-      description: Sensor voor neerslagintensiteit, indien beschikbaar.
-      selector:
-        entity:
-          domain: sensor
-
-    neerslagverwachting_sensor:
-      name: Neerslagverwachting Sensor (optioneel)
-      description: Sensor voor neerslagverwachting, indien beschikbaar.
-      selector:
-        entity:
-          domain: sensor
-
-    # Instellingen
     temperatuur_min:
       name: Minimale Temperatuur
-      description: Minimale temperatuur voor activering van de lampen.
+      description: De minimale temperatuur waarbij de insectenlamp moet worden ingeschakeld.
       default: 20
       selector:
         number:
@@ -79,7 +75,7 @@ blueprint:
 
     temperatuur_max:
       name: Maximale Temperatuur
-      description: Maximale temperatuur voor activering van de lampen.
+      description: De maximale temperatuur waarbij de insectenlamp moet worden ingeschakeld.
       default: 35
       selector:
         number:
@@ -89,7 +85,7 @@ blueprint:
 
     luchtvochtigheid_min:
       name: Minimale Luchtvochtigheid
-      description: Minimale luchtvochtigheid voor activering van de lampen.
+      description: De minimale luchtvochtigheid waarbij de insectenlamp moet worden ingeschakeld.
       default: 60
       selector:
         number:
@@ -99,7 +95,7 @@ blueprint:
 
     luchtvochtigheid_max:
       name: Maximale Luchtvochtigheid
-      description: Maximale luchtvochtigheid voor activering van de lampen.
+      description: De maximale luchtvochtigheid waarbij de insectenlamp moet worden ingeschakeld.
       default: 90
       selector:
         number:
@@ -109,7 +105,7 @@ blueprint:
 
     uv_min:
       name: Minimale UV Straling
-      description: Minimale UV-straling om de lampen uit te schakelen.
+      description: De minimale UV-straling waarbij de insectenlamp moet worden ingeschakeld.
       default: 200
       selector:
         number:
@@ -119,7 +115,7 @@ blueprint:
 
     uv_max:
       name: Maximale UV Straling
-      description: Maximale UV-straling om de lampen aan te zetten.
+      description: De maximale UV-straling waarbij de insectenlamp moet worden ingeschakeld.
       default: 800
       selector:
         number:
@@ -127,10 +123,9 @@ blueprint:
           max: 1000
           unit_of_measurement: 'W/m²'
 
-    # Instellingen voor vakantieschakelaar
     vakantieschakelaar_tijd:
       name: Tijd aan tijdens vakantie
-      description: Tijd in minuten dat de lampen aan mogen zijn per dag tijdens de vakantie.
+      description: Het aantal minuten dat de lampen aan mogen zijn per dag tijdens de vakantie.
       default: 5
       selector:
         number:
@@ -138,10 +133,9 @@ blueprint:
           max: 60
           unit_of_measurement: 'min'
 
-    # Seizoensmodus
     zomer_temperatuur_min:
       name: Minimale Temperatuur Zomer
-      description: Minimale temperatuur voor zomermodus.
+      description: Minimale temperatuur voor zomermodus. Deze waarde wordt gebruikt om te bepalen of de lampen aan moeten zijn tijdens de zomer.
       default: 20
       selector:
         number:
@@ -151,7 +145,7 @@ blueprint:
 
     zomer_temperatuur_max:
       name: Maximale Temperatuur Zomer
-      description: Maximale temperatuur voor zomermodus.
+      description: Maximale temperatuur voor zomermodus. Deze waarde wordt gebruikt om te bepalen of de lampen aan moeten zijn tijdens de zomer.
       default: 35
       selector:
         number:
@@ -161,7 +155,7 @@ blueprint:
 
     winter_temperatuur_max:
       name: Maximale Temperatuur Winter
-      description: Maximale temperatuur voor wintermodus.
+      description: Maximale temperatuur voor wintermodus. Deze waarde wordt gebruikt om te bepalen of de lampen aan moeten zijn tijdens de winter.
       default: 19
       selector:
         number:
@@ -171,7 +165,7 @@ blueprint:
 
     winter_luchtvochtigheid_max:
       name: Maximale Luchtvochtigheid Winter
-      description: Maximale luchtvochtigheid voor wintermodus.
+      description: Maximale luchtvochtigheid voor wintermodus. Deze waarde wordt gebruikt om te bepalen of de lampen aan moeten zijn tijdens de winter.
       default: 60
       selector:
         number:
