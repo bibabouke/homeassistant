@@ -68,7 +68,7 @@ blueprint:
       attribute: humidity
 
   condition:
-    - condition: or
+    - condition: and
       conditions:
         - condition: numeric_state
           entity_id: !input 'weather_sensor'
