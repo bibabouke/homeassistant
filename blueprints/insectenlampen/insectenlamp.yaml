@@ -29,7 +29,7 @@ blueprint:
         number:
           min: -10
           max: 40
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     temperature_max:
       name: Maximum Temperatuur
@@ -39,7 +39,7 @@ blueprint:
         number:
           min: -10
           max: 40
-          unit_of_measurement: °C
+          unit_of_measurement: '°C'
 
     humidity_threshold:
       name: Luchtvochtigheidsdrempel
@@ -49,7 +49,7 @@ blueprint:
         number:
           min: 0
           max: 100
-          unit_of_measurement: %
+          unit_of_measurement: '%'
 
     uv_sensor:
       name: UV-Straling sensor [Optioneel]
