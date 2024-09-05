@@ -1,140 +1,140 @@
 blueprint:
-  name: Ventilatie en Mechanische Ventilatie
-  description: Regelt ventilatoren en mechanische ventilatie op basis van temperatuur en weersomstandigheden
+  name: Ventilatie Automatisering
+  description: Automatisering voor ventilatoren en mechanische ventilatie op basis van weersdata van weather.buienradar.
   domain: automation
   input:
+    weather_sensor:
+      name: Weersensor
+      description: Kies de sensor voor weersdata. Alleen weather.buienradar wordt ondersteund.
+      selector:
+        entity:
+          domain: weather
     woonkamer_ventilator:
-      name: Woonkamer Ventilator
-      description: De ventilator in de woonkamer
+      name: Ventilator Woonkamer
+      description: De ventilator in de woonkamer.
       selector:
         entity:
           domain: switch
     slaapkamer_ventilator:
-      name: Slaapkamer Ventilator
-      description: De ventilator in de slaapkamer
+      name: Ventilator Slaapkamer
+      description: De ventilator in de slaapkamer.
       selector:
         entity:
           domain: switch
-    kantoor_ventilator:
-      name: Kantoor Ventilator
-      description: De ventilator in het kantoor
+    mechanische_ventilatie:
+      name: Mechanische Ventilatie
+      description: De mechanische ventilatie, optioneel.
       selector:
         entity:
           domain: switch
-    zolder_ventilator:
-      name: Zolder Ventilator
-      description: De ventilator op de zolder
-      selector:
-        entity:
-          domain: switch
-    buitentemperatuur_sensor:
-      name: Buitentemperatuur Sensor
-      description: De sensor voor de buitentemperatuur (mag geen weather.buienradar zijn)
-      selector:
-        entity:
-          domain: sensor
-    eerste_weersensor:
-      name: Eerste Weersensor
-      description: De eerste weersensor (mag geen weather.buienradar zijn)
-      selector:
-        entity:
-          domain: weather
-    tweede_weersensor:
-      name: Tweede Weersensor
-      description: De tweede weersensor (mag geen weather.buienradar zijn)
-      selector:
-        entity:
-          domain: weather
+        multiple: false
     temperatuur_marge:
       name: Temperatuur Marge
-      description: De marge rond de gewenste temperatuur
-      default: 0.5
+      description: De marge voor temperatuurvergelijking in graden Celsius.
+      default: 2
       selector:
         number:
           min: 0
-          max: 5
+          max: 10
           step: 0.1
-    overwerktimer_tijd:
-      name: Overwerktimer Tijd
-      description: De tijd in minuten dat een handmatig ingeschakelde ventilator niet door het script wordt beïnvloed
-      default: 15
+    gewenste_temperatuur_woonkamer:
+      name: Gewenste Temperatuur Woonkamer
+      description: De gewenste temperatuur in de woonkamer in graden Celsius.
+      default: 21
       selector:
         number:
-          min: 1
-          max: 60
-          step: 1
+          min: 15
+          max: 30
+          step: 0.1
+    gewenste_temperatuur_slaapkamer:
+      name: Gewenste Temperatuur Slaapkamer
+      description: De gewenste temperatuur in de slaapkamer in graden Celsius.
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.1
+    neerslag_drempel:
+      name: Neerslag Drempel
+      description: De hoeveelheid neerslag waarbij ventilatoren uitgeschakeld moeten worden in mm.
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+    wind_snelheid_drempel:
+      name: Wind Snelheid Drempel
+      description: De wind snelheid waarbij ventilatoren uitgeschakeld moeten worden in km/h.
+      default: 7
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 0.1
 
 trigger:
-  - platform: time_pattern
-    minutes: '/15'
+  platform: time_pattern
+  minutes: '/15'
 
 condition:
-  - condition: and
-    conditions:
-      - condition: state
-        entity_id: "{{ input('woonkamer_ventilator') }}"
-        state: 'on'
-      - condition: state
-        entity_id: "{{ input('slaapkamer_ventilator') }}"
-        state: 'on'
-      - condition: state
-        entity_id: "{{ input('kantoor_ventilator') }}"
-        state: 'on'
-      - condition: state
-        entity_id: "{{ input('zolder_ventilator') }}"
-        state: 'on'
+  condition: template
+  value_template: >
+    {% set weather_data = states(input('weather_sensor')) %}
+    {% set temp_buiten = weather_data.attributes.temperature | float %}
+    {% set regen = weather_data.attributes.precipitation | float %}
+    {% set humidity = weather_data.attributes.humidity | float %}
+    
+    {% set temp_w = states('sensor.binnen_temperatuur_woonkamer') | float %}
+    {% set temp_s = states('sensor.binnen_temperatuur_slaapkamer') | float %}
+    
+    {% set marge = input('temperatuur_marge') | float %}
+    {% set gewenste_temp_w = input('gewenste_temperatuur_woonkamer') | float %}
+    {% set gewenste_temp_s = input('gewenste_temperatuur_slaapkamer') | float %}
+    
+    # Condities voor ventilatoren en mechanische ventilatie
+    {% set ventilator_w_buiten_koud = temp_buiten < temp_w - marge %}
+    {% set ventilator_s_buiten_koud = temp_buiten < temp_s - marge %}
+    {% set ventilator_w_regen = regen > input('neerslag_drempel') %}
+    {% set ventilator_s_regen = regen > input('neerslag_drempel') %}
+    {% set ventilator_w_wind = state_attr('weather.buienradar', 'wind_speed') | float > input('wind_snelheid_drempel') %}
+    {% set ventilator_s_wind = state_attr('weather.buienradar', 'wind_speed') | float > input('wind_snelheid_drempel') %}
+
+    {% set ventilator_w_aan = ventilator_w_buiten_koud and not ventilator_w_regen and not ventilator_w_wind %}
+    {% set ventilator_s_aan = ventilator_s_buiten_koud and not ventilator_s_regen and not ventilator_s_wind %}
+
+    {% set mechanische_ventilatie_aan = temp_buiten < temp_w - marge or temp_buiten < temp_s - marge %}
+    
+    # Controleer de status van de ventilatoren en mechanische ventilatie
+    {% set ventilator_w_status = is_state(input('woonkamer_ventilator'), 'on') %}
+    {% set ventilator_s_status = is_state(input('slaapkamer_ventilator'), 'on') %}
+    {% set mechanische_ventilatie_status = is_state(input('mechanische_ventilatie'), 'on') %}
+
+    # Acties
+    ventilator_w_status != ventilator_w_aan or ventilator_s_status != ventilator_s_aan or mechanische_ventilatie_status != mechanische_ventilatie_aan
 
 action:
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: >
-              {% set temp_w = states('sensor.binnen_temperatuur_woonkamer') | float %}
-              {% set temp_s = states('sensor.binnen_temperatuur_slaapkamer') | float %}
-              {% set temp_k = states('sensor.binnen_temperatuur_kantoor') | float %}
-              {% set temp_z = states('sensor.binnen_temperatuur_zolder') | float %}
-              {% set buitentemp = states('sensor.buitentemperatuur_sensor') | float %}
-              {% set marge = state('input_number.temperatuur_marge') | float %}
-              {% set gewenste_temp_w = state('input_number.gewenste_temperatuur_woonkamer') | float %}
-              {% set gewenste_temp_s = state('input_number.gewenste_temperatuur_slaapkamer') | float %}
-              {% set gewenste_temp_k = state('input_number.gewenste_temperatuur_kantoor') | float %}
-              {% set gewenste_temp_z = state('input_number.gewenste_temperatuur_zolder') | float %}
-              (temp_w < (gewenste_temp_w - marge) or temp_w > (gewenste_temp_w + marge)) or
-              (temp_s < (gewenste_temp_s - marge) or temp_s > (gewenste_temp_s + marge)) or
-              (temp_k < (gewenste_temp_k - marge) or temp_k > (gewenste_temp_k + marge)) or
-              (temp_z < (gewenste_temp_z - marge) or temp_z > (gewenste_temp_z + marge))
-        sequence:
-          - service: switch.turn_on
-            target:
-              entity_id: >
-                {% if temp_w < (gewenste_temp_w - marge) %}
-                  {{ input('woonkamer_ventilator') }}
-                {% endif %}
-                {% if temp_s < (gewenste_temp_s - marge) %}
-                  {{ input('slaapkamer_ventilator') }}
-                {% endif %}
-                {% if temp_k < (gewenste_temp_k - marge) %}
-                  {{ input('kantoor_ventilator') }}
-                {% endif %}
-                {% if temp_z < (gewenste_temp_z - marge) %}
-                  {{ input('zolder_ventilator') }}
-                {% endif %}
-          - service: switch.turn_off
-            target:
-              entity_id: >
-                {% if temp_w > (gewenste_temp_w + marge) %}
-                  {{ input('woonkamer_ventilator') }}
-                {% endif %}
-                {% if temp_s > (gewenste_temp_s + marge) %}
-                  {{ input('slaapkamer_ventilator') }}
-                {% endif %}
-                {% if temp_k > (gewenste_temp_k + marge) %}
-                  {{ input('kantoor_ventilator') }}
-                {% endif %}
-                {% if temp_z > (gewenste_temp_z + marge) %}
-                  {{ input('zolder_ventilator') }}
-                {% endif %}
-
-    # Voeg hier de logica toe voor mechanische ventilatie indien van toepassing
-    # Hier kunnen we later de code toevoegen die betrekking heeft op de mechanische ventilatie
+  choose:
+    - conditions:
+        - condition: template
+          value_template: "{{ ventilator_w_aan }}"
+      sequence:
+        - service: switch.turn_on
+          target:
+            entity_id: "{{ input('woonkamer_ventilator') }}"
+    - conditions:
+        - condition: template
+          value_template: "{{ ventilator_s_aan }}"
+      sequence:
+        - service: switch.turn_on
+          target:
+            entity_id: "{{ input('slaapkamer_ventilator') }}"
+    - conditions:
+        - condition: template
+          value_template: "{{ mechanische_ventilatie_aan }}"
+      sequence:
+        - service: switch.turn_on
+          target:
+            entity_id: "{{ input('mechanische_ventilatie') }}"
 
