@@ -105,64 +105,64 @@ blueprint:
           max: 50
           unit_of_measurement: km/h
 
-  trigger:
-    - platform: time_pattern
-      minutes: "/15"
+trigger:
+  - platform: time_pattern
+    minutes: "/15"
 
-  condition:
-    - condition: or
-      conditions:
-        - condition: template
-          value_template: >
-            {% set temp_w = states('sensor.binnen_temperatuur_woonkamer') | float %}
-            {% set temp_s = states('sensor.binnen_temperatuur_slaapkamer') | float %}
-            {% set buitentemp = states('sensor.buitentemperatuur_sensor') | float %}
-            {% set marge = state('input_number.temperatuur_marge') | float %}
-            {% set gewenste_temp_w = state('input_number.gewenste_temperatuur_woonkamer') | float %}
-            {% set gewenste_temp_s = state('input_number.gewenste_temperatuur_slaapkamer') | float %}
-            (buitentemp < temp_w - marge) or (buitentemp < temp_s - marge)
-        - condition: template
-          value_template: >
-            {% set neerslag = states('sensor.buitentemperatuur_sensor') | float %}
-            {% set neerslag_drempel = state('input_number.neerslag_uitschakeling') | float %}
-            neerslag >= neerslag_drempel
-        - condition: template
-          value_template: >
-            {% set wind_snelheid = states('sensor.buitentemperatuur_sensor') | float %}
-            {% set wind_drempel = state('input_number.wind_conditie') | float %}
-            wind_snelheid >= wind_drempel
+condition:
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: >
+          {% set temp_w = states('sensor.binnen_temperatuur_woonkamer') | float %}
+          {% set temp_s = states('sensor.binnen_temperatuur_slaapkamer') | float %}
+          {% set buitentemp = states('sensor.buitentemperatuur_sensor') | float %}
+          {% set marge = state('input_number.temperatuur_marge') | float %}
+          {% set gewenste_temp_w = state('input_number.gewenste_temperatuur_woonkamer') | float %}
+          {% set gewenste_temp_s = state('input_number.gewenste_temperatuur_slaapkamer') | float %}
+          (buitentemp < (gewenste_temp_w - marge)) or (buitentemp < (gewenste_temp_s - marge))
+      - condition: template
+        value_template: >
+          {% set neerslag = states('sensor.buitentemperatuur_sensor') | float %}
+          {% set neerslag_drempel = state('input_number.neerslag_uitschakeling') | float %}
+          neerslag >= neerslag_drempel
+      - condition: template
+        value_template: >
+          {% set wind_snelheid = states('sensor.buitentemperatuur_sensor') | float %}
+          {% set wind_drempel = state('input_number.wind_conditie') | float %}
+          wind_snelheid >= wind_drempel
 
-  action:
-    - choose:
-        - conditions:
-            - condition: state
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: "{{ input('woonkamer_ventilator') }}"
+            state: 'on'
+        sequence:
+          - service: switch.turn_on
+            target:
               entity_id: "{{ input('woonkamer_ventilator') }}"
-              state: 'on'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: "{{ input('woonkamer_ventilator') }}"
-        - conditions:
-            - condition: state
+      - conditions:
+          - condition: state
+            entity_id: "{{ input('slaapkamer_ventilator') }}"
+            state: 'on'
+        sequence:
+          - service: switch.turn_on
+            target:
               entity_id: "{{ input('slaapkamer_ventilator') }}"
-              state: 'on'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: "{{ input('slaapkamer_ventilator') }}"
-        - conditions:
-            - condition: state
+      - conditions:
+          - condition: state
+            entity_id: "{{ input('mechanische_ventilatie') }}"
+            state: 'on'
+        sequence:
+          - service: switch.turn_on
+            target:
               entity_id: "{{ input('mechanische_ventilatie') }}"
-              state: 'on'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: "{{ input('mechanische_ventilatie') }}"
-        - conditions:
-            - condition: state
+      - conditions:
+          - condition: state
+            entity_id: "{{ input('mechanische_ventilatie') }}"
+            state: 'off'
+        sequence:
+          - service: switch.turn_off
+            target:
               entity_id: "{{ input('mechanische_ventilatie') }}"
-              state: 'off'
-          sequence:
-            - service: switch.turn_off
-              target:
-                entity_id: "{{ input('mechanische_ventilatie') }}"
