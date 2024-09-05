@@ -1,0 +1,234 @@
+blueprint:
+  name: GMS Ventilatie
+  description: Automatisering voor ventilatie met temperatuur- en regencontrole.
+  domain: automation
+  input:
+    woonkamer_ventilator:
+      name: Ventilator Woonkamer
+      description: Schakelaar voor de woonkamer ventilator.
+      selector:
+        entity:
+          domain: switch
+    woonkamer_temperatuur_sensor:
+      name: Temperatuur Sensor Woonkamer
+      description: Sensor voor de binnentemperatuur in de woonkamer.
+      selector:
+        entity:
+          domain: sensor
+    slaapkamer_ventilator:
+      name: Ventilator Slaapkamer
+      description: Schakelaar voor de slaapkamer ventilator.
+      selector:
+        entity:
+          domain: switch
+    slaapkamer_temperatuur_sensor:
+      name: Temperatuur Sensor Slaapkamer
+      description: Sensor voor de binnentemperatuur in de slaapkamer.
+      selector:
+        entity:
+          domain: sensor
+    kantoor_ventilator:
+      name: Ventilator Kantoor
+      description: Schakelaar voor de kantoor ventilator.
+      selector:
+        entity:
+          domain: switch
+    kantoor_temperatuur_sensor:
+      name: Temperatuur Sensor Kantoor
+      description: Sensor voor de binnentemperatuur in het kantoor.
+      selector:
+        entity:
+          domain: sensor
+    zolder_ventilator:
+      name: Ventilator Zolder
+      description: Schakelaar voor de zolder ventilator.
+      selector:
+        entity:
+          domain: switch
+    zolder_temperatuur_sensor:
+      name: Temperatuur Sensor Zolder
+      description: Sensor voor de binnentemperatuur op de zolder.
+      selector:
+        entity:
+          domain: sensor
+    buitentemperatuur_sensor:
+      name: Buitentemperatuur Sensor
+      description: Sensor voor de buitentemperatuur.
+      selector:
+        entity:
+          domain: weather
+    regen_sensor:
+      name: Regen Sensor
+      description: Sensor voor regenwaarneming.
+      selector:
+        entity:
+          domain: weather
+    gewenste_temperatuur_woonkamer:
+      name: Gewenste Temperatuur Woonkamer
+      description: De gewenste temperatuur in de woonkamer.
+      selector:
+        number:
+          min: -50
+          max: 50
+          step: 0.1
+    gewenste_temperatuur_slaapkamer:
+      name: Gewenste Temperatuur Slaapkamer
+      description: De gewenste temperatuur in de slaapkamer.
+      selector:
+        number:
+          min: -50
+          max: 50
+          step: 0.1
+    gewenste_temperatuur_kantoor:
+      name: Gewenste Temperatuur Kantoor
+      description: De gewenste temperatuur in het kantoor.
+      selector:
+        number:
+          min: -50
+          max: 50
+          step: 0.1
+    gewenste_temperatuur_zolder:
+      name: Gewenste Temperatuur Zolder
+      description: De gewenste temperatuur op de zolder.
+      selector:
+        number:
+          min: -50
+          max: 50
+          step: 0.1
+    marge:
+      name: Marge
+      description: Temperatuursmarge rondom de gewenste temperatuur.
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+    regen_schakelaar_woonkamer:
+      name: Regen Schakelaar Woonkamer
+      description: Schakelaar die bepaalt of de woonkamer ventilator bij regen moet uitschakelen.
+      selector:
+        boolean: {}
+    regen_schakelaar_slaapkamer:
+      name: Regen Schakelaar Slaapkamer
+      description: Schakelaar die bepaalt of de slaapkamer ventilator bij regen moet uitschakelen.
+      selector:
+        boolean: {}
+    regen_schakelaar_kantoor:
+      name: Regen Schakelaar Kantoor
+      description: Schakelaar die bepaalt of de kantoor ventilator bij regen moet uitschakelen.
+      selector:
+        boolean: {}
+    regen_schakelaar_zolder:
+      name: Regen Schakelaar Zolder
+      description: Schakelaar die bepaalt of de zolder ventilator bij regen moet uitschakelen.
+      selector:
+        boolean: {}
+
+trigger:
+  - platform: time_pattern
+    minutes: "/15"
+
+condition:
+  - condition: template
+    value_template: >
+      {% set buiten_temp = state_attr(buitentemperatuur_sensor, 'temperature') | float(default=21) %}
+      {% set regen = state_attr(regen_sensor, 'precipitation') | float(default=0) %}
+      {% set marge = states(marge) | float(default=1) %}
+      {% set woonkamer_temp = states(woonkamer_temperatuur_sensor) | float(default=21) %}
+      {% set slaapkamer_temp = states(slaapkamer_temperatuur_sensor) | float(default=21) %}
+      {% set kantoor_temp = states(kantoor_temperatuur_sensor) | float(default=21) %}
+      {% set zolder_temp = states(zolder_temperatuur_sensor) | float(default=21) %}
+      {% set gewenste_woonkamer_temp = states(gewenste_temperatuur_woonkamer) | float(default=21) %}
+      {% set gewenste_slaapkamer_temp = states(gewenste_temperatuur_slaapkamer) | float(default=21) %}
+      {% set gewenste_kantoor_temp = states(gewenste_temperatuur_kantoor) | float(default=21) %}
+      {% set gewenste_zolder_temp = states(gewenste_temperatuur_zolder) | float(default=21) %}
+      {% set regen_schakelaar_woonkamer = is_state(regen_schakelaar_woonkamer, 'on') %}
+      {% set regen_schakelaar_slaapkamer = is_state(regen_schakelaar_slaapkamer, 'on') %}
+      {% set regen_schakelaar_kantoor = is_state(regen_schakelaar_kantoor, 'on') %}
+      {% set regen_schakelaar_zolder = is_state(regen_schakelaar_zolder, 'on') %}
+      
+      {% if buiten_temp < (gewenste_woonkamer_temp - marge) and not regen_schakelaar_woonkamer %}
+        {{ woonkamer_temp < (gewenste_woonkamer_temp + marge) }}
+      {% else %}
+        {{ false }}
+      {% endif %}
+      {% if buiten_temp < (gewenste_slaapkamer_temp - marge) and not regen_schakelaar_slaapkamer %}
+        {{ slaapkamer_temp < (gewenste_slaapkamer_temp + marge) }}
+      {% else %}
+        {{ false }}
+      {% endif %}
+      {% if buiten_temp < (gewenste_kantoor_temp - marge) and not regen_schakelaar_kantoor %}
+        {{ kantoor_temp < (gewenste_kantoor_temp + marge) }}
+      {% else %}
+        {{ false }}
+      {% endif %}
+      {% if buiten_temp < (gewenste_zolder_temp - marge) and not regen_schakelaar_zolder %}
+        {{ zolder_temp < (gewenste_zolder_temp + marge) }}
+      {% else %}
+        {{ false }}
+      {% endif %}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set buiten_temp = state_attr(buitentemperatuur_sensor, 'temperature') | float(default=21) %}
+              {% set regen_schakelaar_woonkamer = is_state(regen_schakelaar_woonkamer, 'on') %}
+              {% if buiten_temp < (states(gewenste_temperatuur_woonkamer) | float(default=21) - states(marge) | float(default=1)) and not regen_schakelaar_woonkamer %}
+                {{ states(woonkamer_temperatuur_sensor) | float(default=21) < (states(gewenste_temperatuur_woonkamer) | float(default=21) + states(marge) | float(default=1)) }}
+              {% else %}
+                {{ false }}
+              {% endif %}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input woonkamer_ventilator
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set buiten_temp = state_attr(buitentemperatuur_sensor, 'temperature') | float(default=21) %}
+              {% set regen_schakelaar_slaapkamer = is_state(regen_schakelaar_slaapkamer, 'on') %}
+              {% if buiten_temp < (states(gewenste_temperatuur_slaapkamer) | float(default=21) - states(marge) | float(default=1)) and not regen_schakelaar_slaapkamer %}
+                {{ states(slaapkamer_temperatuur_sensor) | float(default=21) < (states(gewenste_temperatuur_slaapkamer) | float(default=21) + states(marge) | float(default=1)) }}
+              {% else %}
+                {{ false }}
+              {% endif %}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input slaapkamer_ventilator
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set buiten_temp = state_attr(buitentemperatuur_sensor, 'temperature') | float(default=21) %}
+              {% set regen_schakelaar_kantoor = is_state(regen_schakelaar_kantoor, 'on') %}
+              {% if buiten_temp < (states(gewenste_temperatuur_kantoor) | float(default=21) - states(marge) | float(default=1)) and not regen_schakelaar_kantoor %}
+                {{ states(kantoor_temperatuur_sensor) | float(default=21) < (states(gewenste_temperatuur_kantoor) | float(default=21) + states(marge) | float(default=1)) }}
+              {% else %}
+                {{ false }}
+              {% endif %}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input kantoor_ventilator
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set buiten_temp = state_attr(buitentemperatuur_sensor, 'temperature') | float(default=21) %}
+              {% set regen_schakelaar_zolder = is_state(regen_schakelaar_zolder, 'on') %}
+              {% if buiten_temp < (states(gewenste_temperatuur_zolder) | float(default=21) - states(marge) | float(default=1)) and not regen_schakelaar_zolder %}
+                {{ states(zolder_temperatuur_sensor) | float(default=21) < (states(gewenste_temperatuur_zolder) | float(default=21) + states(marge) | float(default=1)) }}
+              {% else %}
+                {{ false }}
+              {% endif %}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input zolder_ventilator
+    default:
+      - service: logger.log
+        data:
+          message: "Error: Template evaluation failed for Ventilatie Automatisering"
+          level: error
+mode: single
