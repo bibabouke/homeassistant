@@ -17,16 +17,9 @@ blueprint:
         entity:
           domain: switch
 
-    kantoor_ventilator:
-      name: Kantoor Ventilator
-      description: De ventilator in het kantoor.
-      selector:
-        entity:
-          domain: switch
-
-    zolder_ventilator:
-      name: Zolder Ventilator
-      description: De ventilator op de zolder.
+    mechanische_ventilatie:
+      name: Mechanische Ventilatie
+      description: De mechanische ventilatie in de slaapkamer.
       selector:
         entity:
           domain: switch
@@ -51,13 +44,6 @@ blueprint:
       selector:
         entity:
           domain: sensor
-
-    mechanische_ventilatie:
-      name: Mechanische Ventilatie
-      description: De mechanische ventilatie in de slaapkamer.
-      selector:
-        entity:
-          domain: switch
 
     temperatuur_marge:
       name: Temperatuur Marge
@@ -121,7 +107,7 @@ blueprint:
 
   trigger:
     - platform: time_pattern
-      minutes: "/15"  # Regelmatig controleren om de 15 minuten
+      minutes: "/15"
 
   condition:
     - condition: or
@@ -164,23 +150,6 @@ blueprint:
             - service: switch.turn_on
               target:
                 entity_id: "{{ input('slaapkamer_ventilator') }}"
-        - conditions:
-            - condition: state
-              entity_id: "{{ input('kantoor_ventilator') }}"
-              state: 'on'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: "{{ input('kantoor_ventilator') }}"
-        - conditions:
-            - condition: state
-              entity_id: "{{ input('zolder_ventilator') }}"
-              state: 'on'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: "{{ input('zolder_ventilator') }}"
-    - choose:
         - conditions:
             - condition: state
               entity_id: "{{ input('mechanische_ventilatie') }}"
