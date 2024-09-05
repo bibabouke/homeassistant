@@ -1,0 +1,232 @@
+blueprint:
+  name: Ventilatie- en Afzuigsysteem
+  description: Automatisering voor ventilatoren en mechanische ventilatie op basis van temperatuur, luchtvochtigheid, en weersomstandigheden.
+  domain: automation
+  input:
+    ventilator_woonkamer:
+      name: Ventilator Woonkamer
+      description: Selecteer de schakelaar voor de ventilator in de woonkamer.
+      selector:
+        entity:
+          domain: switch
+    ventilator_slaapkamer:
+      name: Ventilator Slaapkamer
+      description: Selecteer de schakelaar voor de ventilator in de slaapkamer.
+      selector:
+        entity:
+          domain: switch
+    ventilator_zolder:
+      name: Ventilator Zolder
+      description: Selecteer de schakelaar voor de ventilator op de zolder.
+      selector:
+        entity:
+          domain: switch
+    ventilator_kantoor:
+      name: Ventilator Kantoor
+      description: Selecteer de schakelaar voor de ventilator in het kantoor.
+      selector:
+        entity:
+          domain: switch
+    temperatuur_woonkamer:
+      name: Temperatuursensor Woonkamer
+      description: Selecteer de temperatuursensor voor de woonkamer.
+      selector:
+        entity:
+          domain: sensor
+    temperatuur_slaapkamer:
+      name: Temperatuursensor Slaapkamer
+      description: Selecteer de temperatuursensor voor de slaapkamer.
+      selector:
+        entity:
+          domain: sensor
+    buitentemperatuur_sensor:
+      name: Buitentemperatuursensor
+      description: Selecteer de buitentemperatuursensor. Dit kan een sensor zijn van weather.buienradar of een andere weersensor.
+      selector:
+        entity:
+          domain: sensor
+    luchtvochtigheid_slaapkamer:
+      name: Luchtvochtigheid Slaapkamer
+      description: Selecteer de luchtvochtigheidssensor voor de slaapkamer.
+      selector:
+        entity:
+          domain: sensor
+    temperatuur_marge:
+      name: Temperatuur Marge
+      description: De toegestane temperatuurschommelingen rond de ingestelde waarde (bijvoorbeeld 0.4°C).
+      default: 0.4
+      selector:
+        number:
+          min: 0.1
+          max: 2
+          step: 0.1
+    stabilisatievenster:
+      name: Stabilisatievenster
+      description: Hoe lang de temperatuur stabiel moet blijven binnen de marge (bijvoorbeeld 10 minuten).
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 60
+          step: 1
+    overwerktimer_duur:
+      name: Overwerktimer Duur
+      description: Hoe lang de ventilator na handmatige inschakeling blijft draaien zonder tussenkomst van automatisering (bijvoorbeeld 15 minuten).
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 60
+          step: 1
+    neerslag_ventilator_woonkamer:
+      name: Neerslag Uitschakeling Woonkamer
+      description: Schakel de ventilator in de woonkamer uit bij neerslag.
+      default: true
+      selector:
+        boolean:
+    neerslag_ventilator_slaapkamer:
+      name: Neerslag Uitschakeling Slaapkamer
+      description: Schakel de ventilator in de slaapkamer uit bij neerslag.
+      default: true
+      selector:
+        boolean:
+    neerslag_ventilator_zolder:
+      name: Neerslag Uitschakeling Zolder
+      description: Schakel de ventilator op de zolder uit bij neerslag.
+      default: true
+      selector:
+        boolean:
+    neerslag_ventilator_kantoor:
+      name: Neerslag Uitschakeling Kantoor
+      description: Schakel de ventilator in het kantoor uit bij neerslag.
+      default: true
+      selector:
+        boolean:
+    wind_ventilator_woonkamer:
+      name: Windcondities Woonkamer
+      description: Schakel de ventilator in de woonkamer uit bij wind boven de drempelwaarde (bijvoorbeeld 7 km/h).
+      default: true
+      selector:
+        boolean:
+    wind_ventilator_slaapkamer:
+      name: Windcondities Slaapkamer
+      description: Schakel de ventilator in de slaapkamer uit bij wind boven de drempelwaarde (bijvoorbeeld 7 km/h).
+      default: true
+      selector:
+        boolean:
+    wind_ventilator_zolder:
+      name: Windcondities Zolder
+      description: Schakel de ventilator op de zolder uit bij wind boven de drempelwaarde (bijvoorbeeld 7 km/h).
+      default: true
+      selector:
+        boolean:
+    wind_ventilator_kantoor:
+      name: Windcondities Kantoor
+      description: Schakel de ventilator in het kantoor uit bij wind boven de drempelwaarde (bijvoorbeeld 7 km/h).
+      default: true
+      selector:
+        boolean:
+    mechanische_ventilatie:
+      name: Mechanische Ventilatie
+      description: Schakel mechanische ventilatie in op basis van temperatuurverschillen.
+      default: false
+      selector:
+        boolean:
+    weer_sensor_1:
+      name: Eerste Weersensor
+      description: Selecteer de eerste weersensor voor de mechanische ventilatie. Dit kan een sensor zijn van weather.buienradar of een andere weersensor.
+      selector:
+        entity:
+          domain: sensor
+    weer_sensor_2:
+      name: Tweede Weersensor
+      description: Selecteer de tweede weersensor voor de mechanische ventilatie. Dit kan een sensor zijn van weather.buienradar of een andere weersensor.
+      selector:
+        entity:
+          domain: sensor
+
+trigger:
+  - platform: time_pattern
+    minutes: '/15'
+
+condition:
+  - condition: state
+    entity_id: sensor.buitentemperatuur_sensor
+    state: 'on'
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set temp_binnen = states('sensor.temperatuur_woonkamer') | float %}
+              {% set temp_buiten = states('sensor.buitentemperatuur_sensor') | float %}
+              {% set marge = 0.4 %}
+              {% set min_temp = temp_binnen - marge %}
+              {% set max_temp = temp_binnen + marge %}
+              temp_buiten < min_temp
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id:
+                - switch.ventilator_woonkamer
+                - switch.ventilator_kantoor
+                - switch.ventilator_zolder
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: switch.ventilator_slaapkamer
+                    state: 'on'
+                sequence:
+                  - delay: '00:{{ states("input_number.overwerktimer_duur") | int }}:00'
+                  - service: switch.turn_on
+                    target:
+                      entity_id: switch.ventilator_slaapkamer
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set temp_binnen = states('sensor.temperatuur_woonkamer') | float %}
+              {% set temp_buiten = states('sensor.buitentemperatuur_sensor') | float %}
+              temp_buiten >= temp_binnen
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id:
+                - switch.ventilator_woonkamer
+                - switch.ventilator_kantoor
+                - switch.ventilator_zolder
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {% set neerslag = states('weather.forecast_thuis') | float %}
+              {% set neerslag_waarde = 1.0 %}
+              neerslag > neerslag_waarde
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: switch.ventilator_woonkamer
+                    state: 'on'
+                  - condition: input_boolean.neerslag_ventilator_woonkamer
+                    state: 'on'
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: switch.ventilator_woonkamer
+              - conditions:
+                  - condition: state
+                    entity_id: switch.ventilator_slaapkamer
+                    state: 'on'
+                  - condition: input_boolean.neerslag_ventilator_slaapkamer
+                    state: 'on'
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: switch.ventilator_slaapkamer
+              - conditions:
+                  - condition: state
+                    entity_id: switch.ventilator_zolder
+                    state: 'on'
+                  - condition: input_boolean.neerslag_ventilator_zolder
+                    state:
