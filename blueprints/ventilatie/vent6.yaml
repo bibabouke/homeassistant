@@ -109,33 +109,33 @@ action:
   - choose:
       - conditions:
           - condition: state
-            entity_id: "{{ input('woonkamer_ventilator') }}"
+            entity_id: !input 'woonkamer_ventilator'
             state: 'on'
         sequence:
           - service: switch.turn_on
             target:
-              entity_id: "{{ input('woonkamer_ventilator') }}"
+              entity_id: !input 'woonkamer_ventilator'
       - conditions:
           - condition: state
-            entity_id: "{{ input('slaapkamer_ventilator') }}"
+            entity_id: !input 'slaapkamer_ventilator'
             state: 'on'
         sequence:
           - service: switch.turn_on
             target:
-              entity_id: "{{ input('slaapkamer_ventilator') }}"
+              entity_id: !input 'slaapkamer_ventilator'
       - conditions:
           - condition: state
-            entity_id: "{{ input('kantoor_ventilator') }}"
+            entity_id: !input 'kantoor_ventilator'
             state: 'on'
         sequence:
           - service: switch.turn_on
             target:
-              entity_id: "{{ input('kantoor_ventilator') }}"
+              entity_id: !input 'kantoor_ventilator'
       - conditions:
           - condition: state
-            entity_id: "{{ input('zolder_ventilator') }}"
+            entity_id: !input 'zolder_ventilator'
             state: 'on'
         sequence:
           - service: switch.turn_on
             target:
-              entity_id: "{{ input('zolder_ventilator') }}"
+              entity_id: !input 'zolder_ventilator'
