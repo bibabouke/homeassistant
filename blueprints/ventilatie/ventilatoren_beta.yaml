@@ -1,6 +1,6 @@
 blueprint:
   name: Ventilatie Automatisering
-  description: Automatisering voor ventilatoren en mechanische ventilatie op basis van weersdata van weather.buienradar.
+  description: Automatisering voor ventilatoren op basis van weersdata van weather.buienradar.
   domain: automation
   input:
     weather_sensor:
@@ -18,12 +18,6 @@ blueprint:
     slaapkamer_ventilator:
       name: Ventilator Slaapkamer
       description: De ventilator in de slaapkamer.
-      selector:
-        entity:
-          domain: switch
-    mechanische_ventilatie:
-      name: Mechanische Ventilatie
-      description: De mechanische ventilatie, optioneel. Als niet opgegeven, wordt deze niet gebruikt.
       selector:
         entity:
           domain: switch
@@ -92,7 +86,7 @@ condition:
     {% set gewenste_temp_w = input('gewenste_temperatuur_woonkamer') | float %}
     {% set gewenste_temp_s = input('gewenste_temperatuur_slaapkamer') | float %}
     
-    # Condities voor ventilatoren en mechanische ventilatie
+    # Condities voor ventilatoren
     {% set ventilator_w_buiten_koud = temp_buiten < temp_w - marge %}
     {% set ventilator_s_buiten_koud = temp_buiten < temp_s - marge %}
     {% set ventilator_w_regen = regen > input('neerslag_drempel') %}
@@ -103,15 +97,12 @@ condition:
     {% set ventilator_w_aan = ventilator_w_buiten_koud and not ventilator_w_regen and not ventilator_w_wind %}
     {% set ventilator_s_aan = ventilator_s_buiten_koud and not ventilator_s_regen and not ventilator_s_wind %}
 
-    {% set mechanische_ventilatie_aan = input('mechanische_ventilatie') is defined and (temp_buiten < temp_w - marge or temp_buiten < temp_s - marge) %}
-    
-    # Controleer de status van de ventilatoren en mechanische ventilatie
+    # Controleer de status van de ventilatoren
     {% set ventilator_w_status = is_state(input('woonkamer_ventilator'), 'on') %}
     {% set ventilator_s_status = is_state(input('slaapkamer_ventilator'), 'on') %}
-    {% set mechanische_ventilatie_status = is_state(input('mechanische_ventilatie'), 'on') %}
 
     # Acties
-    ventilator_w_status != ventilator_w_aan or ventilator_s_status != ventilator_s_aan or mechanische_ventilatie_status != mechanische_ventilatie_aan
+    ventilator_w_status != ventilator_w_aan or ventilator_s_status != ventilator_s_aan
 
 action:
   choose:
@@ -129,11 +120,4 @@ action:
         - service: switch.turn_on
           target:
             entity_id: "{{ input('slaapkamer_ventilator') }}"
-    - conditions:
-        - condition: template
-          value_template: "{{ mechanische_ventilatie_aan }}"
-      sequence:
-        - service: switch.turn_on
-          target:
-            entity_id: "{{ input('mechanische_ventilatie') }}"
 
