@@ -1,0 +1,196 @@
+blueprint:
+  name: Gebouw Management Systeem - Ventilatie Automatisering
+  description: Automatisering voor het beheren van ventilatoren op basis van binnen- en buitentemperatuur, regen, en handmatige bediening.
+  domain: automation
+  input:
+    # Verplichte entiteiten
+    woonkamer_ventilator:
+      name: Woonkamer Ventilator
+      description: Selecteer de ventilator voor de woonkamer.
+      selector:
+        entity:
+          domain: switch
+
+    woonkamer_temperatuur_sensor:
+      name: Woonkamer Temperatuur Sensor
+      description: Selecteer de binnentemperatuursensor voor de woonkamer.
+      selector:
+        entity:
+          domain: sensor
+
+    buitentemperatuur_sensor:
+      name: Buitentemperatuur Sensor
+      description: Selecteer de sensor die de buitentemperatuur meet.
+      selector:
+        entity:
+          domain: weather
+
+    gewenste_temperatuur_woonkamer:
+      name: Gewenste Temperatuur Woonkamer
+      description: De gewenste temperatuur voor de woonkamer.
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+          unit_of_measurement: °C
+
+    marge:
+      name: Marge voor Temperatuur
+      description: Marges om te voorkomen dat de ventilator te vaak schakelt binnen een klein temperatuurbereik.
+      default: 1
+      selector:
+        number:
+          min: 0.5
+          max: 5
+          step: 0.1
+          unit_of_measurement: °C
+
+    regen_sensor:
+      name: Regen Sensor
+      description: Selecteer de sensor die neerslag detecteert.
+      selector:
+        entity:
+          domain: weather
+
+    regen_schakelaar_woonkamer:
+      name: Uitschakelen bij Regen - Woonkamer
+      description: Schakel de woonkamer ventilator uit bij regen.
+      default: false
+      selector:
+        boolean: {}
+
+    # Optionele kamers (met sensoren en schakelaars voor regen)
+    slaapkamer_ventilator:
+      name: Slaapkamer Ventilator (optioneel)
+      description: Selecteer de ventilator voor de slaapkamer.
+      selector:
+        entity:
+          domain: switch
+      default: null
+
+    slaapkamer_temperatuur_sensor:
+      name: Slaapkamer Temperatuur Sensor (optioneel)
+      description: Selecteer de binnentemperatuursensor voor de slaapkamer.
+      selector:
+        entity:
+          domain: sensor
+      default: null
+
+    gewenste_temperatuur_slaapkamer:
+      name: Gewenste Temperatuur Slaapkamer
+      description: De gewenste temperatuur voor de slaapkamer.
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+          unit_of_measurement: °C
+
+    regen_schakelaar_slaapkamer:
+      name: Uitschakelen bij Regen - Slaapkamer
+      description: Schakel de slaapkamer ventilator uit bij regen.
+      default: false
+      selector:
+        boolean: {}
+
+    kantoor_ventilator:
+      name: Kantoor Ventilator (optioneel)
+      description: Selecteer de ventilator voor het kantoor.
+      selector:
+        entity:
+          domain: switch
+      default: null
+
+    kantoor_temperatuur_sensor:
+      name: Kantoor Temperatuur Sensor (optioneel)
+      description: Selecteer de binnentemperatuursensor voor het kantoor.
+      selector:
+        entity:
+          domain: sensor
+      default: null
+
+    gewenste_temperatuur_kantoor:
+      name: Gewenste Temperatuur Kantoor
+      description: De gewenste temperatuur voor het kantoor.
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+          unit_of_measurement: °C
+
+    regen_schakelaar_kantoor:
+      name: Uitschakelen bij Regen - Kantoor
+      description: Schakel de kantoor ventilator uit bij regen.
+      default: false
+      selector:
+        boolean: {}
+
+    zolder_ventilator:
+      name: Zolder Ventilator (optioneel)
+      description: Selecteer de ventilator voor de zolder.
+      selector:
+        entity:
+          domain: switch
+      default: null
+
+    zolder_temperatuur_sensor:
+      name: Zolder Temperatuur Sensor (optioneel)
+      description: Selecteer de binnentemperatuursensor voor de zolder.
+      selector:
+        entity:
+          domain: sensor
+      default: null
+
+    gewenste_temperatuur_zolder:
+      name: Gewenste Temperatuur Zolder
+      description: De gewenste temperatuur voor de zolder.
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+          unit_of_measurement: °C
+
+    regen_schakelaar_zolder:
+      name: Uitschakelen bij Regen - Zolder
+      description: Schakel de zolder ventilator uit bij regen.
+      default: false
+      selector:
+        boolean: {}
+
+mode: single
+
+trigger:
+  - platform: time_pattern
+    minutes: "/15"
+
+condition: []
+
+action:
+  # Voor de woonkamer
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ states('sensor.woonkamer_temperatuur_sensor') | float > states('input_number.gewenste_temperatuur_woonkamer') | float + states('input_number.marge') | float }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'woonkamer_ventilator'
+
+  # Uitschakelen bij regen
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state('weather.buienradar', 'rain') and is_state('input_boolean.regen_schakelaar_woonkamer', 'on') }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input 'woonkamer_ventilator'
+
+# (Herhaal bovenstaande voor slaapkamer, kantoor, en zolder)
