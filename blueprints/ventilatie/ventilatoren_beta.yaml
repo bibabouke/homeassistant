@@ -23,11 +23,10 @@ blueprint:
           domain: switch
     mechanische_ventilatie:
       name: Mechanische Ventilatie
-      description: De mechanische ventilatie, optioneel.
+      description: De mechanische ventilatie, optioneel. Als niet opgegeven, wordt deze niet gebruikt.
       selector:
         entity:
           domain: switch
-        multiple: false
     temperatuur_marge:
       name: Temperatuur Marge
       description: De marge voor temperatuurvergelijking in graden Celsius.
@@ -98,13 +97,13 @@ condition:
     {% set ventilator_s_buiten_koud = temp_buiten < temp_s - marge %}
     {% set ventilator_w_regen = regen > input('neerslag_drempel') %}
     {% set ventilator_s_regen = regen > input('neerslag_drempel') %}
-    {% set ventilator_w_wind = state_attr('weather.buienradar', 'wind_speed') | float > input('wind_snelheid_drempel') %}
-    {% set ventilator_s_wind = state_attr('weather.buienradar', 'wind_speed') | float > input('wind_snelheid_drempel') %}
+    {% set ventilator_w_wind = state_attr(input('weather_sensor'), 'wind_speed') | float > input('wind_snelheid_drempel') %}
+    {% set ventilator_s_wind = state_attr(input('weather_sensor'), 'wind_speed') | float > input('wind_snelheid_drempel') %}
 
     {% set ventilator_w_aan = ventilator_w_buiten_koud and not ventilator_w_regen and not ventilator_w_wind %}
     {% set ventilator_s_aan = ventilator_s_buiten_koud and not ventilator_s_regen and not ventilator_s_wind %}
 
-    {% set mechanische_ventilatie_aan = temp_buiten < temp_w - marge or temp_buiten < temp_s - marge %}
+    {% set mechanische_ventilatie_aan = input('mechanische_ventilatie') is defined and (temp_buiten < temp_w - marge or temp_buiten < temp_s - marge) %}
     
     # Controleer de status van de ventilatoren en mechanische ventilatie
     {% set ventilator_w_status = is_state(input('woonkamer_ventilator'), 'on') %}
