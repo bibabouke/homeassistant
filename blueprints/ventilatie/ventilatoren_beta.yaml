@@ -137,63 +137,63 @@ blueprint:
             (buitentemp < temp_w - marge) or (buitentemp < temp_s - marge)
         - condition: template
           value_template: >
-            {% set buitenneerslag = states('sensor.buitentemperatuur_sensor') | float %}
-            {% set neerslag = state('input_number.neerslag_uitschakeling') | float %}
-            buitenneerslag < neerslag
+            {% set neerslag = states('sensor.buitentemperatuur_sensor') | float %}
+            {% set neerslag_drempel = state('input_number.neerslag_uitschakeling') | float %}
+            neerslag >= neerslag_drempel
         - condition: template
           value_template: >
             {% set wind_snelheid = states('sensor.buitentemperatuur_sensor') | float %}
-            {% set wind_conditie = state('input_number.wind_conditie') | float %}
-            wind_snelheid < wind_conditie
+            {% set wind_drempel = state('input_number.wind_conditie') | float %}
+            wind_snelheid >= wind_drempel
 
   action:
     - choose:
         - conditions:
             - condition: state
-              entity_id: input_boolean.ventilator_woonkamer
+              entity_id: "{{ input('woonkamer_ventilator') }}"
               state: 'on'
           sequence:
             - service: switch.turn_on
               target:
-                entity_id: input.input_boolean.ventilator_woonkamer
+                entity_id: "{{ input('woonkamer_ventilator') }}"
         - conditions:
             - condition: state
-              entity_id: input_boolean.ventilator_slaapkamer
+              entity_id: "{{ input('slaapkamer_ventilator') }}"
               state: 'on'
           sequence:
             - service: switch.turn_on
               target:
-                entity_id: input.input_boolean.ventilator_slaapkamer
+                entity_id: "{{ input('slaapkamer_ventilator') }}"
         - conditions:
             - condition: state
-              entity_id: input_boolean.ventilator_kantoor
+              entity_id: "{{ input('kantoor_ventilator') }}"
               state: 'on'
           sequence:
             - service: switch.turn_on
               target:
-                entity_id: input.input_boolean.ventilator_kantoor
+                entity_id: "{{ input('kantoor_ventilator') }}"
         - conditions:
             - condition: state
-              entity_id: input_boolean.ventilator_zolder
+              entity_id: "{{ input('zolder_ventilator') }}"
               state: 'on'
           sequence:
             - service: switch.turn_on
               target:
-                entity_id: input.input_boolean.ventilator_zolder
+                entity_id: "{{ input('zolder_ventilator') }}"
     - choose:
         - conditions:
             - condition: state
-              entity_id: input_boolean.mechanische_ventilatie
+              entity_id: "{{ input('mechanische_ventilatie') }}"
               state: 'on'
           sequence:
             - service: switch.turn_on
               target:
-                entity_id: input.input_boolean.mechanische_ventilatie
+                entity_id: "{{ input('mechanische_ventilatie') }}"
         - conditions:
             - condition: state
-              entity_id: input_boolean.mechanische_ventilatie
+              entity_id: "{{ input('mechanische_ventilatie') }}"
               state: 'off'
           sequence:
             - service: switch.turn_off
               target:
-                entity_id: input.input_boolean.mechanische_ventilatie
+                entity_id: "{{ input('mechanische_ventilatie') }}"
