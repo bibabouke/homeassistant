@@ -1,0 +1,97 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Regen Uitschakeling
+  description: >
+    Automatisch ventilatiesysteem met hysteresis, regen uitschakeling,
+    en fallback voor sensorgegevens.
+  domain: automation
+  input:
+    fan_switch_woonkamer:
+      name: Ventilator Woonkamer
+      description: "De ventilator die wordt bestuurd in de woonkamer."
+      selector:
+        entity:
+          domain: switch
+    temp_sensor_woonkamer:
+      name: Temperatuursensor Woonkamer
+      description: "De sensor voor de temperatuur in de woonkamer."
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    fan_switch_slaapkamer:
+      name: Ventilator Slaapkamer
+      description: "De ventilator die wordt bestuurd in de slaapkamer."
+      selector:
+        entity:
+          domain: switch
+    temp_sensor_slaapkamer:
+      name: Temperatuursensor Slaapkamer
+      description: "De sensor voor de temperatuur in de slaapkamer."
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    weather_sensor:
+      name: Weersensor Buiten
+      description: "De sensor voor de buitentemperatuur en neerslag."
+      selector:
+        entity:
+          domain: weather
+    desired_temp_woonkamer:
+      name: Gewenste Kamertemperatuur Woonkamer
+      description: "De ingestelde temperatuur voor de woonkamer."
+      default: 21.0
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: slider
+    desired_temp_slaapkamer:
+      name: Gewenste Kamertemperatuur Slaapkamer
+      description: "De ingestelde temperatuur voor de slaapkamer."
+      default: 21.0
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: slider
+    hysteresis:
+      name: Hysteresis
+      description: "De marge om te voorkomen dat de ventilator te snel schakelt."
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          step: 0.1
+          unit_of_measurement: "°C"
+          mode: slider
+    rain_threshold:
+      name: Regendrempel
+      description: >
+        De hoeveelheid neerslag in mm die als drempel wordt gebruikt om de ventilator uit te schakelen.
+        Standaardinstelling voor motregen is 0.1 mm.
+      default: 0.1
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: "mm"
+          mode: slider
+    enable_rain_shutdown_woonkamer:
+      name: Schakel ventilator Woonkamer uit bij regen
+      description: "Schakel de ventilator uit als de regensensor de ingestelde drempel bereikt."
+      default: false
+      selector:
+        boolean:
+    enable_rain_shutdown_slaapkamer:
+      name: Schakel ventilator Slaapkamer uit bij regen
+      description: "Schakel de ventilator uit als de regensensor de ingestelde drempel bereikt."
+      default: false
+      selector:
+        boolean:
