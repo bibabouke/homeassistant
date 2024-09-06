@@ -1,5 +1,5 @@
 blueprint:
-  name: GebouwBeheerVentilatie versie 15
+  name: GebouwBeheerVentilatie versie 15.1
   description: >
     Beheer ventilatie en afzuiging per kamer met opties voor regensensoren en vakantiesensor.
   domain: automation
@@ -44,7 +44,7 @@ blueprint:
         entity:
           domain: sensor
           device_class: humidity
-      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+      default: null
     master_bedroom_regen_sensor:
       name: Regenschakelaar Master Bedroom
       description: Selecteer de regensensor voor de Master Bedroom
@@ -72,7 +72,7 @@ blueprint:
         entity:
           domain: sensor
           device_class: humidity
-      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+      default: null
     kantoor_regen_sensor:
       name: Regenschakelaar Kantoorruimte
       description: Selecteer de regensensor voor de Kantoorruimte
@@ -100,7 +100,7 @@ blueprint:
         entity:
           domain: sensor
           device_class: humidity
-      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+      default: null
     zolder_regen_sensor:
       name: Regenschakelaar Zolder
       description: Selecteer de regensensor voor de Zolder
@@ -114,7 +114,7 @@ blueprint:
       selector:
         entity:
           domain: switch
-      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+      default: null
     vakantie_sensor:
       name: Vakantiesensor
       description: Selecteer de sensor die bepaalt of de woning in vakantiemodus is
@@ -123,14 +123,14 @@ blueprint:
           domain: binary_sensor
     regendrempel:
       name: Regendrempelwaarde
-      description: Stel de drempelwaarde in voor regen in mm om te bepalen wanneer de ventilatoren worden uitgeschakeld. Advies: waarde net onder motregen is 0.5 mm.
+      description: "Stel de drempelwaarde in voor regen in mm om te bepalen wanneer de ventilatoren worden uitgeschakeld. Advies: waarde net onder motregen is 0.5 mm."
       selector:
         number:
           min: 0
           max: 10
           step: 0.1
           unit_of_measurement: mm
-      default: 0.5  # Dit is een waarde net onder motregen
+      default: 0.5
 
 variables:
   woonkamer_fan_entity: !input woonkamer_fan
