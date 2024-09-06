@@ -44,3 +44,28 @@ Check status van switches: Voordat een ventilator of afzuiging wordt in- of uitg
 Overige opmerkingen
 Versiebeheer: Het is belangrijk om versiebeheer toe te passen voor elke update van de blueprint. Elke nieuwe versie moet een duidelijk versienummer krijgen (bijvoorbeeld versie 13, versie 14, etc.).
 Toekomstige uitbreidingen: Er moet ruimte zijn om het systeem in de toekomst uit te breiden met extra systemen zoals rolluiken of airconditioning.
+
+Ik heb liever niet dat we rechtstreeks gebruik maken van de weerentiteit.
+Ik heb liever dat jij om de xx tijd de data ophaalt en opslaat in een variabele van onszelf. 
+Bij storingen van buienradar heb jij als nog de laatste temperatuur, humidity en neerslag.
+
+De attributen van buienradar zien er als volgt uit>
+temperature: 23.4
+temperature_unit: °C
+humidity: 62
+pressure: 1010.6
+pressure_unit: hPa
+wind_bearing: 82
+wind_speed: 16.92
+wind_speed_unit: km/h
+visibility: 46.8
+visibility_unit: km
+precipitation_unit: mm
+attribution: Data provided by buienradar.nl
+friendly_name: Buienradar
+supported_features: 1
+
+
+De gebruiker kiest de desgewenste weather entiteit, maar dan heb je een idee van de attributen ervan. 
+
+
