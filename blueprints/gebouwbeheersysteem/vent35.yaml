@@ -1,0 +1,136 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Verbeteringen
+  description: >
+    Automatisch ventilatiesysteem met hysteresis, minimale schakeltijd en fallback voor sensorgegevens.
+    De `update_interval` wordt gebruikt voor de minimale schakeltijd en sensorupdates.
+
+  domain: automation
+  input:
+    fan_switch:
+      name: Ventilator Schakelaar
+      description: "De ventilator die wordt bestuurd"
+      selector:
+        entity:
+          domain: switch
+    temp_sensor:
+      name: Temperatuursensor Binnen
+      description: "Temperatuursensor voor binnen"
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    weather_sensor:
+      name: Weersensor Buiten
+      description: "Weersensor voor de buitentemperatuur"
+      selector:
+        entity:
+          domain: weather
+    desired_temp:
+      name: Gewenste Kamertemperatuur
+      description: "De ingestelde temperatuur voor de kamer"
+      default: 21.0
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.1
+          unit_of_measurement: °C
+    hysteresis:
+      name: Hysteresis
+      description: "De marge om te voorkomen dat de ventilator te snel aan- of uitschakelt"
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          step: 0.1
+          unit_of_measurement: °C
+    update_interval:
+      name: Update Interval / Schakeltijd
+      description: >
+        Hoe vaak de sensoren moeten worden bijgewerkt en de minimale schakeltijd voor de ventilator (in minuten).
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          step: 1
+          unit_of_measurement: minuten
+
+variables:
+  weather_entity_id: !input weather_sensor
+  temp_sensor_entity_id: !input temp_sensor
+  fan_switch_entity_id: !input fan_switch
+  desired_temp_value: !input desired_temp
+  hysteresis_value: !input hysteresis
+  update_interval: !input update_interval
+  # Fallback voor buitentemperatuur
+  buiten_temp: >
+    {% set temp = state_attr(weather_entity_id, 'temperature') %}
+    {% if temp is not none %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.buiten_temp_backup') | float(0) }}
+    {% endif %}
+  # Fallback voor binnentemperatuur
+  binnentemperatuur: >
+    {% set temp = states(temp_sensor_entity_id) %}
+    {% if temp not in ['unavailable', 'unknown', 'none'] %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.binnen_temp_backup') | float(0) }}
+    {% endif %}
+
+trigger:
+  - platform: state
+    entity_id:
+      - !input temp_sensor
+      - !input weather_sensor
+  - platform: time_pattern
+    minutes: "/1"  # Controleer elke minuut
+
+condition:
+  - condition: template
+    value_template: >
+      {% set last_triggered = as_timestamp(state_attr(this.entity_id, 'last_triggered')) %}
+      {% if last_triggered is none %}
+        true
+      {% else %}
+        {{ (as_timestamp(now()) - last_triggered) >= (update_interval * 60) }}
+      {% endif %}
+
+action:
+  - service: system_log.write
+    data:
+      message: >
+        "Buiten temp: {{ buiten_temp }}, Binnentemp: {{ binnentemperatuur }}, Gewenste temp: {{ desired_temp_value }}, Ventilator status: {{ is_state(fan_switch_entity_id, 'on') }}"
+      level: info
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur <= desired_temp_value and is_state(fan_switch_entity_id, 'on') }}
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input fan_switch
+          - service: system_log.write
+            data:
+              message: "Ventilator uitgeschakeld omdat de kamertemperatuur onder of gelijk is aan de gewenste temperatuur."
+              level: info
+
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur >= (desired_temp_value + hysteresis_value) and buiten_temp < binnentemperatuur and is_state(fan_switch_entity_id, 'off') }}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input fan_switch
+          - service: system_log.write
+            data:
+              message: "Ventilator ingeschakeld omdat de kamertemperatuur boven de gewenste temperatuur plus hysteresis ligt."
+              level: info
+
+mode: single
