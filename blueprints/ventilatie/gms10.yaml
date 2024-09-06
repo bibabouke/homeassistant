@@ -1,0 +1,158 @@
+blueprint:
+  name: Gebouw Management Systeem - Klimaatbeheer
+  description: Automatisering van ventilatie, temperatuur en regen-detectie
+  domain: automation
+  input:
+    woonkamer_ventilator:
+      name: Woonkamer Ventilator
+      selector:
+        entity:
+          domain: switch
+    woonkamer_temperatuur_sensor:
+      name: Woonkamer Temperatuur Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    slaapkamer_ventilator:
+      name: Slaapkamer Ventilator
+      selector:
+        entity:
+          domain: switch
+    slaapkamer_temperatuur_sensor:
+      name: Slaapkamer Temperatuur Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    kantoor_ventilator:
+      name: Kantoor Ventilator
+      selector:
+        entity:
+          domain: switch
+    kantoor_temperatuur_sensor:
+      name: Kantoor Temperatuur Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    zolder_ventilator:
+      name: Zolder Ventilator
+      selector:
+        entity:
+          domain: switch
+    zolder_temperatuur_sensor:
+      name: Zolder Temperatuur Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    buitentemperatuur_sensor:
+      name: Buitentemperatuur Sensor
+      selector:
+        entity:
+          domain: weather
+    regen_sensor:
+      name: Regen Sensor
+      selector:
+        entity:
+          domain: weather
+    marge:
+      name: Temperatuur Marge
+      description: De marge waarbij de ventilator aangaat
+      default: 2
+      selector:
+        number:
+          min: 0
+          max: 5
+          unit_of_measurement: "°C"
+    regen_schakelaar_woonkamer:
+      name: Woonkamer Regen Schakelaar
+      description: Zet de woonkamer ventilator uit bij regen
+      default: false
+      selector:
+        boolean:
+    regen_schakelaar_slaapkamer:
+      name: Slaapkamer Regen Schakelaar
+      description: Zet de slaapkamer ventilator uit bij regen
+      default: false
+      selector:
+        boolean:
+    regen_schakelaar_kantoor:
+      name: Kantoor Regen Schakelaar
+      description: Zet de kantoor ventilator uit bij regen
+      default: false
+      selector:
+        boolean:
+    regen_schakelaar_zolder:
+      name: Zolder Regen Schakelaar
+      description: Zet de zolder ventilator uit bij regen
+      default: false
+      selector:
+        boolean
+
+trigger:
+  - platform: time_pattern
+    minutes: "/15"  # Controleer elke 15 minuten de waardes
+
+condition: []
+
+action:
+  - variables:
+      buiten_temp: "{{ state_attr(buitentemperatuur_sensor, 'temperature') | float(default=21) }}"
+      regen: "{{ state_attr(regen_sensor, 'precipitation') | float(default=0) }}"
+      marge: "{{ marge | float(default=2) }}"
+      woonkamer_temp: "{{ states(woonkamer_temperatuur_sensor) | float(default=21) }}"
+      slaapkamer_temp: "{{ states(slaapkamer_temperatuur_sensor) | float(default=21) }}"
+      kantoor_temp: "{{ states(kantoor_temperatuur_sensor) | float(default=21) }}"
+      zolder_temp: "{{ states(zolder_temperatuur_sensor) | float(default=21) }}"
+      gewenste_woonkamer_temp: "{{ states('input_number.gewenste_temperatuur_woonkamer') | float(default=21) }}"
+      gewenste_slaapkamer_temp: "{{ states('input_number.gewenste_temperatuur_slaapkamer') | float(default=21) }}"
+      gewenste_kantoor_temp: "{{ states('input_number.gewenste_temperatuur_kantoor') | float(default=21) }}"
+      gewenste_zolder_temp: "{{ states('input_number.gewenste_temperatuur_zolder') | float(default=21) }}"
+      regen_schakelaar_woonkamer: "{{ is_state('input_boolean.regen_schakelaar_woonkamer', 'on') }}"
+      regen_schakelaar_slaapkamer: "{{ is_state('input_boolean.regen_schakelaar_slaapkamer', 'on') }}"
+      regen_schakelaar_kantoor: "{{ is_state('input_boolean.regen_schakelaar_kantoor', 'on') }}"
+      regen_schakelaar_zolder: "{{ is_state('input_boolean.regen_schakelaar_zolder', 'on') }}"
+
+  - choose:
+      - conditions:
+          - "{{ buiten_temp < (gewenste_woonkamer_temp - marge) and not regen_schakelaar_woonkamer }}"
+          - "{{ woonkamer_temp < (gewenste_woonkamer_temp + marge) }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ woonkamer_ventilator }}"
+      - conditions:
+          - "{{ buiten_temp < (gewenste_slaapkamer_temp - marge) and not regen_schakelaar_slaapkamer }}"
+          - "{{ slaapkamer_temp < (gewenste_slaapkamer_temp + marge) }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ slaapkamer_ventilator }}"
+      - conditions:
+          - "{{ buiten_temp < (gewenste_kantoor_temp - marge) and not regen_schakelaar_kantoor }}"
+          - "{{ kantoor_temp < (gewenste_kantoor_temp + marge) }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ kantoor_ventilator }}"
+      - conditions:
+          - "{{ buiten_temp < (gewenste_zolder_temp - marge) and not regen_schakelaar_zolder }}"
+          - "{{ zolder_temp < (gewenste_zolder_temp + marge) }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ zolder_ventilator }}"
+    default: []
+
+  - service: logbook.log
+    data:
+      name: GMS Ventilatie
+      message: >
+        Ventilatie geactiveerd. Buitentemperatuur: {{ buiten_temp }}°C.
+        Woonkamer: {{ woonkamer_temp }}°C, Slaapkamer: {{ slaapkamer_temp }}°C,
+        Kantoor: {{ kantoor_temp }}°C, Zolder: {{ zolder_temp }}°C.
+        Regen: {{ regen }} mm.
+
+mode: single
