@@ -1,0 +1,147 @@
+blueprint:
+  name: Ventilatie- en Afzuigsysteem Automatisering
+  description: |
+    Automatisering voor het beheren van ventilatoren en afzuiging op basis van temperatuur, vochtigheid, en vakantiesensor.
+    Ondersteunt een automatische seizoensmodus en een handmatige override-modus.
+  domain: automation
+  homeassistant:
+    min_version: "2024.9.0"
+  input:
+    # Ventilatoren sectie
+    ventilatoren_section:
+      name: Ventilatoren
+      description: "Instellingen voor ventilatoren in elke ruimte"
+      selector:
+        device:
+          integration: fan
+
+    input_ventilatoren:
+      name: Aantal Ventilatoren
+      description: "Kies hoeveel ventilatoren je wilt gebruiken (maximaal 5)"
+      selector:
+        number:
+          min: 3
+          max: 5
+          step: 1
+    
+    # Ruimte 1
+    ruimte_1_naam:
+      name: Naam Ruimte 1
+      description: "Geef een naam voor de eerste ruimte (bijv. woonkamer)"
+      selector:
+        text:
+    ruimte_1_fan:
+      name: Ventilator Ruimte 1
+      description: "Selecteer de ventilator voor deze ruimte"
+      selector:
+        entity:
+          domain: fan
+    ruimte_1_temp_sensor:
+      name: Temperatuursensor Ruimte 1
+      description: "Selecteer de temperatuursensor voor deze ruimte"
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    # Override timer
+    override_timer:
+      name: Override-tijd
+      description: "Stel in hoelang de override-modus actief blijft (standaard 30 minuten)"
+      selector:
+        number:
+          min: 5
+          max: 120
+          step: 5
+          unit_of_measurement: minutes
+      default: 30
+
+    # Vakantiemodus
+    vakantie_sensor:
+      name: Vakantiesensor
+      description: "Selecteer de sensor die bepaalt of de woning in vakantiemodus is"
+      selector:
+        entity:
+          domain: binary_sensor
+
+    vakantie_ventilator:
+      name: Ventilatoren uitschakelen in vakantiemodus?
+      description: "Schakel ventilatoren uit als de vakantiemodus actief is"
+      selector:
+        boolean:
+      default: true
+
+    vakantie_afzuiging:
+      name: Afzuiginstallatie uitschakelen in vakantiemodus?
+      description: "Schakel afzuiginstallatie uit als de vakantiemodus actief is"
+      selector:
+        boolean:
+      default: true
+
+    # Seizoensmodus instellingen
+    seizoensmodus_zomer_temp:
+      name: Zomertemperatuurgrens
+      description: "Bepaal de binnentemperatuurgrens waarbij de zomerseizoenmodus wordt ingeschakeld"
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: °C
+      default: 15
+
+    seizoensmodus_winter_temp:
+      name: Wintertemperatuurgrens
+      description: "Bepaal de buitentemperatuur waarbij de winterseizoenmodus wordt ingeschakeld"
+      selector:
+        number:
+          min: -10
+          max: 10
+          step: 0.5
+          unit_of_measurement: °C
+      default: 5
+
+trigger:
+  - platform: state
+    entity_id: !input ruimte_1_temp_sensor
+  - platform: state
+    entity_id: !input vakantie_sensor
+
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state(!input vakantie_sensor, 'on') }}"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ !input vakantie_ventilator }}"
+                sequence:
+                  - service: fan.turn_off
+                    target:
+                      entity_id: !input ruimte_1_fan
+              - conditions:
+                  - condition: template
+                    value_template: "{{ !input vakantie_afzuiging }}"
+                sequence:
+                  - service: fan.turn_off
+                    target:
+                      entity_id: !input ventilator_afzuiging
+      - conditions:
+          - condition: template
+            value_template: "{{ states('sensor.buitentemperatuur') | float > !input seizoensmodus_winter_temp }}"
+        sequence:
+          - service: fan.turn_on
+            target:
+              entity_id: !input ventilator_afzuiging
+      - conditions:
+          - condition: template
+            value_template: "{{ states('sensor.binnentemperatuur') | float < !input seizoensmodus_zomer_temp }}"
+        sequence:
+          - service: fan.turn_on
+            target:
+              entity_id: !input ruimte_1_fan
+
+mode: single
