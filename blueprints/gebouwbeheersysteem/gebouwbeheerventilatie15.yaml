@@ -1,0 +1,184 @@
+blueprint:
+  name: GebouwBeheerVentilatie versie 15
+  description: >
+    Beheer ventilatie en afzuiging per kamer met opties voor regensensoren en vakantiesensor.
+  domain: automation
+  input:
+    woonkamer_fan:
+      name: Ventilator Woonkamer
+      description: Selecteer de ventilator voor de Woonkamer
+      selector:
+        entity:
+          domain: switch
+    woonkamer_temp_sensor:
+      name: Temperatuursensor Woonkamer
+      description: Selecteer de temperatuursensor voor de Woonkamer
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    woonkamer_regen_sensor:
+      name: Regenschakelaar Woonkamer
+      description: Selecteer de regensensor voor de Woonkamer
+      selector:
+        entity:
+          domain: sensor
+          device_class: precipitation
+    master_bedroom_fan:
+      name: Ventilator Master Bedroom
+      description: Selecteer de ventilator voor de Master Bedroom
+      selector:
+        entity:
+          domain: switch
+    master_bedroom_temp_sensor:
+      name: Temperatuursensor Master Bedroom
+      description: Selecteer de temperatuursensor voor de Master Bedroom
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    master_bedroom_humidity_sensor:
+      name: Luchtvochtigheidssensor Master Bedroom (Optioneel)
+      description: Selecteer de luchtvochtigheidssensor voor de Master Bedroom (Optioneel)
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+    master_bedroom_regen_sensor:
+      name: Regenschakelaar Master Bedroom
+      description: Selecteer de regensensor voor de Master Bedroom
+      selector:
+        entity:
+          domain: sensor
+          device_class: precipitation
+    kantoor_fan:
+      name: Ventilator Kantoorruimte
+      description: Selecteer de ventilator voor de Kantoorruimte
+      selector:
+        entity:
+          domain: switch
+    kantoor_temp_sensor:
+      name: Temperatuursensor Kantoorruimte
+      description: Selecteer de temperatuursensor voor de Kantoorruimte
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    kantoor_humidity_sensor:
+      name: Luchtvochtigheidssensor Kantoorruimte (Optioneel)
+      description: Selecteer de luchtvochtigheidssensor voor de Kantoorruimte (Optioneel)
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+    kantoor_regen_sensor:
+      name: Regenschakelaar Kantoorruimte
+      description: Selecteer de regensensor voor de Kantoorruimte
+      selector:
+        entity:
+          domain: sensor
+          device_class: precipitation
+    zolder_fan:
+      name: Ventilator Zolder
+      description: Selecteer de ventilator voor de Zolder
+      selector:
+        entity:
+          domain: switch
+    zolder_temp_sensor:
+      name: Temperatuursensor Zolder
+      description: Selecteer de temperatuursensor voor de Zolder
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    zolder_humidity_sensor:
+      name: Luchtvochtigheidssensor Zolder (Optioneel)
+      description: Selecteer de luchtvochtigheidssensor voor de Zolder (Optioneel)
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+    zolder_regen_sensor:
+      name: Regenschakelaar Zolder
+      description: Selecteer de regensensor voor de Zolder
+      selector:
+        entity:
+          domain: sensor
+          device_class: precipitation
+    ventilator_afzuiging:
+      name: Afzuiginstallatie (Optioneel)
+      description: Selecteer de afzuiginstallatie (Optioneel)
+      selector:
+        entity:
+          domain: switch
+      default: null  # Maak dit veld optioneel door een lege standaardwaarde te geven
+    vakantie_sensor:
+      name: Vakantiesensor
+      description: Selecteer de sensor die bepaalt of de woning in vakantiemodus is
+      selector:
+        entity:
+          domain: binary_sensor
+    regendrempel:
+      name: Regendrempelwaarde
+      description: Stel de drempelwaarde in voor regen in mm om te bepalen wanneer de ventilatoren worden uitgeschakeld. Advies: waarde net onder motregen is 0.5 mm.
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: mm
+      default: 0.5  # Dit is een waarde net onder motregen
+
+variables:
+  woonkamer_fan_entity: !input woonkamer_fan
+  woonkamer_temp_sensor_entity: !input woonkamer_temp_sensor
+  woonkamer_regen_sensor_entity: !input woonkamer_regen_sensor
+  master_bedroom_fan_entity: !input master_bedroom_fan
+  master_bedroom_temp_sensor_entity: !input master_bedroom_temp_sensor
+  master_bedroom_humidity_sensor_entity: !input master_bedroom_humidity_sensor
+  master_bedroom_regen_sensor_entity: !input master_bedroom_regen_sensor
+  kantoor_fan_entity: !input kantoor_fan
+  kantoor_temp_sensor_entity: !input kantoor_temp_sensor
+  kantoor_humidity_sensor_entity: !input kantoor_humidity_sensor
+  kantoor_regen_sensor_entity: !input kantoor_regen_sensor
+  zolder_fan_entity: !input zolder_fan
+  zolder_temp_sensor_entity: !input zolder_temp_sensor
+  zolder_humidity_sensor_entity: !input zolder_humidity_sensor
+  zolder_regen_sensor_entity: !input zolder_regen_sensor
+  ventilator_afzuiging_entity: !input ventilator_afzuiging
+  vakantie_sensor_entity: !input vakantie_sensor
+  regendrempel_value: !input regendrempel
+
+trigger:
+  - platform: state
+    entity_id:
+      - !input woonkamer_temp_sensor
+      - !input master_bedroom_temp_sensor
+      - !input kantoor_temp_sensor
+      - !input zolder_temp_sensor
+      - !input vakantie_sensor
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state(vakantie_sensor_entity, 'on') }}"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ vakantie_ventilator }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ woonkamer_fan_entity }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ vakantie_afzuiging }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ ventilator_afzuiging_entity }}"
