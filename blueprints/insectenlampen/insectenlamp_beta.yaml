@@ -12,7 +12,7 @@ blueprint:
             domain:
               - switch
               - light
-            multiple: true
+          multiple: true
 
     weather_sensor:
       name: Weersensor
@@ -112,15 +112,15 @@ blueprint:
   action:
     - choose:
         - conditions:
-            - condition: state
+            - condition: numeric_state
               entity_id: !input 'weather_sensor'
               attribute: temperature
-              above: 10
-              below: 35
+              above: !input 'temperature_min'
+              below: !input 'temperature_max'
             - condition: numeric_state
               entity_id: !input 'weather_sensor'
               attribute: humidity
-              above: 60
+              above: !input 'humidity_threshold'
           sequence:
             - service: switch.turn_on
               target:
