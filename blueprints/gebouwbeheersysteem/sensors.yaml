@@ -1,0 +1,22 @@
+# Template sensoren om de laatste bekende waarden voor binnen- en buitentemperatuur op te slaan
+- platform: template
+  sensors:
+    last_known_binnentemperatuur:
+      friendly_name: "Laatste bekende binnentemperatuur"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% if states('sensor.temperatuur_binnen') not in ['unknown', 'unavailable'] %}
+          {{ states('sensor.temperatuur_binnen') }}
+        {% else %}
+          {{ states('sensor.last_known_binnentemperatuur') }}
+        {% endif %}
+        
+    last_known_buiten_temp:
+      friendly_name: "Laatste bekende buitentemperatuur"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% if state_attr('weather.buiten', 'temperature') is not none %}
+          {{ state_attr('weather.buiten', 'temperature') }}
+        {% else %}
+          {{ states('sensor.last_known_buiten_temp') }}
+        {% endif %}
