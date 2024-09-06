@@ -1,0 +1,121 @@
+blueprint:
+  name: "Ventilatiesysteem Master Bedroom"
+  description: >
+    Dit systeem automatiseert de ventilator in de Master Bedroom op basis van de binnentemperatuur, buitentemperatuur, en weersomstandigheden zoals regen. 
+    Het bevat een overwerktimer en ondersteunt handmatige bediening via een switch.
+  
+  domain: automation
+  input:
+    fan_switch:
+      name: Ventilator Switch
+      description: De schakelaar voor de ventilator.
+      selector:
+        entity:
+          domain: switch
+
+    temp_sensor:
+      name: Temperatuursensor Binnen
+      description: De temperatuursensor voor de kamer.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    weather_sensor:
+      name: Weersensor (bijv. Buienradar)
+      description: De sensor die de buitentemperatuur en neerslag doorgeeft.
+      selector:
+        entity:
+          domain: weather
+
+    desired_temp:
+      name: Gewenste Kamertemperatuur
+      description: De temperatuur die je wilt behouden in de Master Bedroom.
+      default: 22
+      selector:
+        number:
+          min: 16
+          max: 30
+          unit_of_measurement: "°C"
+          mode: slider
+
+    rain_threshold:
+      name: Regendrempel
+      description: De hoeveelheid regen (in mm) waarbij de ventilator uitgeschakeld moet worden. Standaardwaarde is motregen (0.1 mm).
+      default: 0.1
+      selector:
+        number:
+          min: 0
+          max: 10
+          unit_of_measurement: "mm"
+          mode: slider
+
+    update_interval:
+      name: Weerupdate-interval
+      description: Hoe vaak de weerdata moet worden bijgewerkt. Standaard is 5 minuten.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "min"
+          mode: slider
+
+    overwork_duration:
+      name: Overwerktimer
+      description: Hoe lang de ventilator handmatig aan mag blijven voordat de automatisering het weer overneemt.
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: "min"
+          mode: slider
+
+variables:
+  buiten_temp: "{{ states('weather.' ~ weather_sensor ~ '.temperature') | float(0) }}"
+  neerslag: "{{ states('weather.' ~ weather_sensor ~ '.precipitation') | float(0) }}"
+
+trigger:
+  # Periodiek bijwerken van weerdata volgens het ingestelde interval
+  - platform: time_pattern
+    minutes: !input update_interval
+
+  # Handmatige bediening van de ventilator (overwerktimer)
+  - platform: state
+    entity_id: !input fan_switch
+    to: 'on'
+    for:
+      minutes: !input overwork_duration
+
+condition:
+  # Zorg ervoor dat de weerdata beschikbaar is of gebruik de laatst opgehaalde waarde
+  - condition: template
+    value_template: "{{ buiten_temp != 0 }}"
+
+action:
+  - choose:
+      - conditions:
+          # Controleer de binnentemperatuur en buitentemperatuur
+          - condition: numeric_state
+            entity_id: !input temp_sensor
+            above: !input desired_temp
+          - condition: template
+            value_template: "{{ buiten_temp < states('sensor.' ~ temp_sensor) | float(0) }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input fan_switch
+
+      - conditions:
+          # Schakel de ventilator uit bij regen boven de ingestelde drempel
+          - condition: numeric_state
+            value_template: "{{ neerslag }}"
+            above: !input rain_threshold
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input fan_switch
+    default: []
+    
+mode: restart
