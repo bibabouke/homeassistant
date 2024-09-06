@@ -1,6 +1,6 @@
 blueprint:
   name: Insectenlamp Automatiserings-Blueprint
-  description: Automatisering voor het bedienen van insectenlampen op basis van weersomstandigheden, vakantieschakelaar en aanwezigheidssensor.
+  description: Automatisering voor insectenlampen op basis van weersomstandigheden, vakantieschakelaar, en aanwezigheidssensor.
   domain: automation
   input:
     insect_lamps:
@@ -16,7 +16,7 @@ blueprint:
 
     weather_sensor:
       name: Weersensor
-      description: Selecteer de sensor die temperatuur en luchtvochtigheid meet.
+      description: Selecteer de weersensor die temperatuur en luchtvochtigheid meet.
       selector:
         entity:
           domain: weather
@@ -60,7 +60,7 @@ blueprint:
 
     presence_sensor:
       name: Aanwezigheidssensor (Schakelaar)
-      description: Selecteer de schakelaar die aangeeft of je in de kantoorunit aanwezig bent.
+      description: Selecteer de schakelaar die aangeeft of je aanwezig bent.
       selector:
         entity:
           domain: switch
@@ -110,26 +110,12 @@ blueprint:
       state: 'on'
 
   action:
-    - choose:
-        - conditions:
-            - condition: numeric_state
-              entity_id: !input 'weather_sensor'
-              attribute: temperature
-              above: !input 'temperature_min'
-              below: !input 'temperature_max'
-            - condition: numeric_state
-              entity_id: !input 'weather_sensor'
-              attribute: humidity
-              above: !input 'humidity_threshold'
-          sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: !input 'insect_lamps'
+    - service: switch.turn_on
+      target:
+        entity_id: !input 'insect_lamps'
+      
+    - delay: !input 'lamp_timer'
 
-            - delay: !input 'lamp_timer'
-
-            - service: switch.turn_off
-              target:
-                entity_id: !input 'insect_lamps'
-
-  mode: single
+    - service: switch.turn_off
+      target:
+        entity_id: !input 'insect_lamps'
