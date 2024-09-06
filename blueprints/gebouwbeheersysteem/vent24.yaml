@@ -1,0 +1,109 @@
+blueprint:
+  name: Ventilatiesysteem Master Bedroom
+  description: Ventileer de slaapkamer op basis van temperatuur en buitensensoren.
+  domain: automation
+  input:
+    fan_switch:
+      name: Ventilator
+      description: Ventilatorschakelaar om aan/uit te zetten
+      selector:
+        entity:
+          domain: switch
+    temp_sensor:
+      name: Temperatuursensor Slaapkamer
+      description: Sensor die de binnentemperatuur meet.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    weather_sensor:
+      name: Weersensor
+      description: Sensor die de buitentemperatuur en andere weergegevens meet.
+      selector:
+        entity:
+          domain: weather
+    desired_temp:
+      name: Gewenste temperatuur
+      description: De temperatuur die je wilt behouden in de kamer.
+      default: 22
+      selector:
+        number:
+          min: 15
+          max: 30
+          unit_of_measurement: °C
+    hysteresis:
+      name: Hysteresis
+      description: De marge waarbij de ventilator niet direct aan/uit schakelt.
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 2
+          step: 0.1
+          unit_of_measurement: °C
+    update_interval:
+      name: Update interval (minuten)
+      description: Hoe vaak de gegevens worden bijgewerkt.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: minuten
+
+variables:
+  weather_entity_id: !input weather_sensor
+  temp_sensor_entity_id: !input temp_sensor
+  fan_switch_entity_id: !input fan_switch
+  desired_temp_value: !input desired_temp
+  hysteresis_value: !input hysteresis
+  buiten_temp: "{{ state_attr(weather_entity_id, 'temperature') | float(0) }}"
+  neerslag: "{{ state_attr(weather_entity_id, 'precipitation') | float(0) }}"
+  luchtvochtigheid: "{{ state_attr(weather_entity_id, 'humidity') | float(0) }}"
+  windsnelheid: "{{ state_attr(weather_entity_id, 'wind_speed') | float(0) }}"
+  binnentemperatuur: >
+    {% if states(temp_sensor_entity_id) != 'unavailable' and states(temp_sensor_entity_id) != 'unknown' %}
+      {{ states(temp_sensor_entity_id) | float(0) }}
+    {% else %}
+      0
+    {% endif %}
+
+trigger:
+  - platform: time_pattern
+    minutes: !input update_interval
+  - platform: state
+    entity_id: !input fan_switch
+    for:
+      minutes: 1
+
+condition:
+  - condition: template
+    value_template: "{{ buiten_temp != 0 }}"
+
+action:
+  - service: system_log.write
+    data:
+      message: >
+        "Buiten temp: {{ buiten_temp }}, Binnentemp: {{ binnentemperatuur }}, Ventilator status: {{ is_state(fan_switch_entity_id, 'on') }}"
+      level: info
+
+  - choose:
+      - conditions:
+          # Ventilator uitschakelen als binnentemperatuur lager of gelijk is aan gewenste temperatuur minus hysteresis
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur <= (desired_temp_value - hysteresis_value) and is_state(fan_switch_entity_id, 'on') }}
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input fan_switch
+
+      - conditions:
+          # Ventilator aanzetten als binnentemperatuur hoger is dan gewenste temperatuur plus hysteresis en buiten koeler is
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur >= (desired_temp_value + hysteresis_value) and buiten_temp < binnentemperatuur and is_state(fan_switch_entity_id, 'off') }}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input fan_switch
