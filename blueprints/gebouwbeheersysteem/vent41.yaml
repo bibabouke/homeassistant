@@ -1,0 +1,234 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Verbeteringen (2 Ventilatoren)
+  description: >
+    Automatisch ventilatiesysteem voor twee kamers met individuele instellingen per ventilator,
+    hysteresis, neerslagdetectie en een gedeelde weersensor voor buiten.
+
+  domain: automation
+  input:
+    fan_switch_woonkamer:
+      name: Ventilator Woonkamer Schakelaar
+      description: "De ventilator in de woonkamer."
+      selector:
+        entity:
+          domain: switch
+    temp_sensor_woonkamer:
+      name: Temperatuursensor Woonkamer
+      description: "De sensor voor de temperatuur in de woonkamer."
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    fan_switch_slaapkamer:
+      name: Ventilator Slaapkamer Schakelaar
+      description: "De ventilator in de slaapkamer."
+      selector:
+        entity:
+          domain: switch
+    temp_sensor_slaapkamer:
+      name: Temperatuursensor Slaapkamer
+      description: "De sensor voor de temperatuur in de slaapkamer."
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    weather_sensor:
+      name: Weersensor Buiten
+      description: "De gedeelde sensor voor de buitentemperatuur en regen."
+      selector:
+        entity:
+          domain: weather
+    desired_temp_woonkamer:
+      name: Gewenste Kamertemperatuur Woonkamer
+      description: "De ingestelde temperatuur voor de woonkamer."
+      default: 21.0
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: slider
+    desired_temp_slaapkamer:
+      name: Gewenste Kamertemperatuur Slaapkamer
+      description: "De ingestelde temperatuur voor de slaapkamer."
+      default: 21.0
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: slider
+    hysteresis:
+      name: Hysteresis
+      description: "De marge om te voorkomen dat de ventilator te snel schakelt."
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          step: 0.1
+          unit_of_measurement: "°C"
+          mode: slider
+    rain_threshold:
+      name: Neerslagdrempelwaarde
+      description: "Drempelwaarde voor neerslag (in mm) waarop de ventilator uitschakelt."
+      default: 0.1
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: "mm"
+          mode: slider
+    disable_rain_shutdown_woonkamer:
+      name: Uitschakeling bij regen uitschakelen (Woonkamer)
+      description: >
+        Schakel de ventilator in de woonkamer niet uit bij regen, zelfs als de drempel is bereikt.
+      default: false
+      selector:
+        boolean: {}
+    disable_rain_shutdown_slaapkamer:
+      name: Uitschakeling bij regen uitschakelen (Slaapkamer)
+      description: >
+        Schakel de ventilator in de slaapkamer niet uit bij regen, zelfs als de drempel is bereikt.
+      default: false
+      selector:
+        boolean: {}
+
+variables:
+  # Woonkamer variabelen
+  fan_switch_woonkamer_entity_id: !input 'fan_switch_woonkamer'
+  temp_sensor_woonkamer_entity_id: !input 'temp_sensor_woonkamer'
+  desired_temp_woonkamer_value: !input 'desired_temp_woonkamer'
+  disable_rain_shutdown_woonkamer_value: !input 'disable_rain_shutdown_woonkamer'
+  
+  # Slaapkamer variabelen
+  fan_switch_slaapkamer_entity_id: !input 'fan_switch_slaapkamer'
+  temp_sensor_slaapkamer_entity_id: !input 'temp_sensor_slaapkamer'
+  desired_temp_slaapkamer_value: !input 'desired_temp_slaapkamer'
+  disable_rain_shutdown_slaapkamer_value: !input 'disable_rain_shutdown_slaapkamer'
+
+  # Gedeelde variabelen
+  weather_entity_id: !input 'weather_sensor'
+  hysteresis_value: !input 'hysteresis'
+  rain_threshold_value: !input 'rain_threshold'
+
+  # Huidige temperaturen
+  binnentemperatuur_woonkamer: >
+    {% set temp = states(temp_sensor_woonkamer_entity_id) %}
+    {% if temp not in ['unknown', 'unavailable'] %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.last_known_binnentemperatuur') | float(21.0) }}
+    {% endif %}
+  
+  binnentemperatuur_slaapkamer: >
+    {% set temp = states(temp_sensor_slaapkamer_entity_id) %}
+    {% if temp not in ['unknown', 'unavailable'] %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.last_known_binnentemperatuur') | float(21.0) }}
+    {% endif %}
+  
+  buiten_temp: >
+    {% set temp = state_attr(weather_entity_id, 'temperature') %}
+    {% if temp is not none %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.last_known_buiten_temp') | float(15.0) }}
+    {% endif %}
+  
+  neerslag: >
+    {% set rain = state_attr(weather_entity_id, 'precipitation') %}
+    {% if rain is not none %}
+      {{ rain | float }}
+    {% else %}
+      0
+    {% endif %}
+
+trigger:
+  - platform: time_pattern
+    minutes: 5  # Elke 5 minuten uitvoeren
+  - platform: state
+    entity_id:
+      - !input 'temp_sensor_woonkamer'
+      - !input 'temp_sensor_slaapkamer'
+      - !input 'weather_sensor'
+
+condition: []
+
+action:
+  # Logging van ventilatiecontrole
+  - service: system_log.write
+    data:
+      message: >
+        "Ventilatiecontrole uitgevoerd. Buiten temp: {{ buiten_temp }}°C, Woonkamer temp: {{ binnentemperatuur_woonkamer }}°C, Slaapkamer temp: {{ binnentemperatuur_slaapkamer }}°C, Neerslag: {{ neerslag }} mm."
+      level: info
+
+  # Woonkamer ventilator regeling
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ neerslag < rain_threshold_value or disable_rain_shutdown_woonkamer_value }}
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur_woonkamer <= desired_temp_woonkamer_value - hysteresis_value
+                 and is_state(fan_switch_woonkamer_entity_id, 'on') }}
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input 'fan_switch_woonkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Woonkamer uitgeschakeld."
+
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur_woonkamer >= desired_temp_woonkamer_value + hysteresis_value
+                 and buiten_temp < binnentemperatuur_woonkamer
+                 and is_state(fan_switch_woonkamer_entity_id, 'off') }}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'fan_switch_woonkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Woonkamer ingeschakeld."
+
+  # Slaapkamer ventilator regeling
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ neerslag < rain_threshold_value or disable_rain_shutdown_slaapkamer_value }}
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur_slaapkamer <= desired_temp_slaapkamer_value - hysteresis_value
+                 and is_state(fan_switch_slaapkamer_entity_id, 'on') }}
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input 'fan_switch_slaapkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Slaapkamer uitgeschakeld."
+
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ binnentemperatuur_slaapkamer >= desired_temp_slaapkamer_value + hysteresis_value
+                 and buiten_temp < binnentemperatuur_slaapkamer
+                 and is_state(fan_switch_slaapkamer_entity_id, 'off') }}
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'fan_switch_slaapkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Slaapkamer ingeschakeld."
+
+mode: single
