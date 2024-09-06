@@ -1,0 +1,114 @@
+blueprint:
+  name: Ventilatie- en Afzuigsysteem Automatisering
+  description: |
+    Automatisering voor het beheren van ventilatoren, afzuiging, en regensensoren per ruimte. 
+    Elke ruimte kan optioneel een luchtvochtigheidssensor hebben, en er is een instelbare drempelwaarde voor regen.
+    
+  domain: automation
+  homeassistant:
+    min_version: "2024.9.0"
+
+  # Input voor de gebruiker (statisch aantal ruimtes en ventilatoren)
+  input:
+    # Woonkamer en andere ruimtes zoals eerder gedefinieerd
+    regendrempel:
+      name: Regendrempel
+      description: Bepaal de drempelwaarde voor regen in mm/uur waarbij ventilatoren worden uitgeschakeld.
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: mm/uur
+      default: 0.3
+
+variables:
+  woonkamer_fan_entity: !input woonkamer_fan
+  master_bedroom_fan_entity: !input master_bedroom_fan
+  kantoor_fan_entity: !input kantoor_fan
+  zolder_fan_entity: !input zolder_fan
+  ventilator_afzuiging_entity: !input ventilator_afzuiging
+  vakantie_sensor_entity: !input vakantie_sensor
+  regendrempel_value: !input regendrempel
+
+  # Seizoensmodus variabelen
+  seizoensmodus_winter_temp: 10  # Instelbare wintertemp
+  seizoensmodus_zomer_temp: 25   # Instelbare zomertemp
+
+trigger:
+  - platform: state
+    entity_id: !input woonkamer_temp_sensor
+  - platform: state
+    entity_id: !input vakantie_sensor
+
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state(vakantie_sensor_entity, 'on') }}"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ vakantie_ventilator }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ woonkamer_fan_entity }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ vakantie_afzuiging }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ ventilator_afzuiging_entity }}"
+      - conditions:
+          - condition: template
+            value_template: "{{ (state_attr('weather.buienradar', 'temperature') | float(0)) > seizoensmodus_winter_temp }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ ventilator_afzuiging_entity }}"
+      - conditions:
+          - condition: template
+            value_template: "{{ (state_attr('weather.buienradar', 'temperature') | float(0)) < seizoensmodus_zomer_temp }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ woonkamer_fan_entity }}"
+      - conditions:
+          - condition: template
+            value_template: "{{ (state_attr('weather.buienradar', 'precipitation') | float(0)) > regendrempel_value }}"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ woonkamer_regen_sensor }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ woonkamer_fan_entity }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ master_bedroom_regen_sensor }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ master_bedroom_fan_entity }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ kantoor_regen_sensor }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ kantoor_fan_entity }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ zolder_regen_sensor }}"
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: "{{ zolder_fan_entity }}"
+
+mode: single
