@@ -1,0 +1,27 @@
+#testen of de fallback temperaturen nog doorkomen
+{% set binnentemp_actual = states('sensor.sensor_slaapkamer_temperature') %}
+{% set buitentemp_actual = state_attr('weather.buienradar', 'temperature') %}
+{% set binnentemp_fallback = states('sensor.last_known_binnentemperatuur') %}
+{% set buitentemp_fallback = states('sensor.last_known_buiten_temp') %}
+
+Sensoren Controle:
+
+**Werkelijke sensoren:**
+- Binnentemperatuur (sensor.sensor_slaapkamer_temperature): {{ binnentemp_actual }} °C
+- Buitentemperatuur (weather.buienradar): {{ buitentemp_actual }} °C
+
+**Fallback sensoren:**
+- Laatste bekende binnentemperatuur (sensor.last_known_binnentemperatuur): {{ binnentemp_fallback }} °C
+- Laatste bekende buitentemperatuur (sensor.last_known_buiten_temp): {{ buitentemp_fallback }} °C
+
+**Vergelijking:**
+- Binnentemperatuur verschil: {{ binnentemp_actual | float - binnentemp_fallback | float }} °C
+- Buitentemperatuur verschil: {{ buitentemp_actual | float - buitentemp_fallback | float }} °C
+
+{% if binnentemp_actual in ['unknown', 'unavailable'] %}
+  **FOUT:** De binnentemperatuursensor is niet beschikbaar!
+{% endif %}
+
+{% if buitentemp_actual is none %}
+  **FOUT:** De buitentemperatuursensor is niet beschikbaar!
+{% endif %}
