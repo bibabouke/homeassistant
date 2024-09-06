@@ -1,0 +1,135 @@
+blueprint:
+  name: Insectenlamp Automatiserings-Blueprint
+  description: Automatisering voor het bedienen van insectenlampen op basis van weersomstandigheden, vakantieschakelaar en aanwezigheidssensor.
+  domain: automation
+  input:
+    insect_lamps:
+      name: Apparaten voor insectenbestrijding
+      description: Selecteer de insectenlampen die je wilt aansturen.
+      selector:
+        target:
+          entity:
+            domain:
+              - switch
+              - light
+            multiple: true
+
+    weather_sensor:
+      name: Weersensor
+      description: Selecteer de sensor die temperatuur en luchtvochtigheid meet.
+      selector:
+        entity:
+          domain: weather
+
+    temperature_min:
+      name: Minimum Temperatuur
+      description: Minimumtemperatuur waarbij de insectenlampen aan moeten gaan (in graden Celsius).
+      default: 10
+      selector:
+        number:
+          min: -10
+          max: 40
+          unit_of_measurement: '°C'
+
+    temperature_max:
+      name: Maximum Temperatuur
+      description: Maximumtemperatuur waarbij de insectenlampen aan moeten gaan (in graden Celsius).
+      default: 35
+      selector:
+        number:
+          min: -10
+          max: 40
+          unit_of_measurement: '°C'
+
+    humidity_threshold:
+      name: Luchtvochtigheidsdrempel
+      description: Luchtvochtigheid waarbij de insectenlampen aan moeten gaan (in %).
+      default: 60
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: '%'
+
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: Schakelt de vakantiemodus in of uit via een dashboardknop.
+      selector:
+        entity:
+          domain: input_boolean
+
+    presence_sensor:
+      name: Aanwezigheidssensor (Schakelaar)
+      description: Selecteer de schakelaar die aangeeft of je in de kantoorunit aanwezig bent.
+      selector:
+        entity:
+          domain: switch
+
+    lamp_timer:
+      name: Lamp Aantijd
+      description: De tijd dat de insectenlampen ingeschakeld blijven.
+      default: "00:10:00"
+      selector:
+        time:
+
+  trigger:
+    - platform: state
+      entity_id: !input 'weather_sensor'
+      attribute: temperature
+
+    - platform: state
+      entity_id: !input 'weather_sensor'
+      attribute: humidity
+
+    - platform: state
+      entity_id: !input 'presence_sensor'
+      to: "on"
+
+  condition:
+    - condition: state
+      entity_id: !input 'vacation_mode'
+      state: 'off'
+
+    - condition: numeric_state
+      entity_id: !input 'weather_sensor'
+      attribute: temperature
+      above: !input 'temperature_min'
+
+    - condition: numeric_state
+      entity_id: !input 'weather_sensor'
+      attribute: temperature
+      below: !input 'temperature_max'
+
+    - condition: numeric_state
+      entity_id: !input 'weather_sensor'
+      attribute: humidity
+      above: !input 'humidity_threshold'
+
+    - condition: state
+      entity_id: !input 'presence_sensor'
+      state: 'on'
+
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: !input 'weather_sensor'
+              attribute: temperature
+              above: 10
+              below: 35
+            - condition: numeric_state
+              entity_id: !input 'weather_sensor'
+              attribute: humidity
+              above: 60
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input 'insect_lamps'
+
+            - delay: !input 'lamp_timer'
+
+            - service: switch.turn_off
+              target:
+                entity_id: !input 'insect_lamps'
+
+  mode: single
