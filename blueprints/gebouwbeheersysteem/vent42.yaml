@@ -2,7 +2,7 @@ blueprint:
   name: Ventilatiesysteem met Hysteresis en Regen Uitschakeling
   description: >
     Automatisch ventilatiesysteem met hysteresis, regen uitschakeling,
-    en fallback voor sensorgegevens.
+    en fallback voor sensorgegevens voor twee ventilatoren (woonkamer en slaapkamer).
   domain: automation
   input:
     fan_switch_woonkamer:
@@ -86,12 +86,132 @@ blueprint:
     enable_rain_shutdown_woonkamer:
       name: Schakel ventilator Woonkamer uit bij regen
       description: "Schakel de ventilator uit als de regensensor de ingestelde drempel bereikt."
-      default: false
+      default: true
       selector:
         boolean:
     enable_rain_shutdown_slaapkamer:
       name: Schakel ventilator Slaapkamer uit bij regen
       description: "Schakel de ventilator uit als de regensensor de ingestelde drempel bereikt."
-      default: false
+      default: true
       selector:
         boolean:
+
+variables:
+  fan_switch_woonkamer_entity_id: !input 'fan_switch_woonkamer'
+  temp_sensor_woonkamer_entity_id: !input 'temp_sensor_woonkamer'
+  desired_temp_woonkamer_value: !input 'desired_temp_woonkamer'
+  enable_rain_shutdown_woonkamer_value: !input 'enable_rain_shutdown_woonkamer'
+
+  fan_switch_slaapkamer_entity_id: !input 'fan_switch_slaapkamer'
+  temp_sensor_slaapkamer_entity_id: !input 'temp_sensor_slaapkamer'
+  desired_temp_slaapkamer_value: !input 'desired_temp_slaapkamer'
+  enable_rain_shutdown_slaapkamer_value: !input 'enable_rain_shutdown_slaapkamer'
+
+  weather_entity_id: !input 'weather_sensor'
+  hysteresis_value: !input 'hysteresis'
+  rain_threshold_value: !input 'rain_threshold'
+
+  # Huidige temperaturen
+  binnentemperatuur_woonkamer: >
+    {% set temp = states(temp_sensor_woonkamer_entity_id) %}
+    {% if temp not in ['unknown', 'unavailable'] %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.last_known_binnentemperatuur') | float(21.0) }}
+    {% endif %}
+
+  binnentemperatuur_slaapkamer: >
+    {% set temp = states(temp_sensor_slaapkamer_entity_id) %}
+    {% if temp not in ['unknown', 'unavailable'] %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.last_known_binnentemperatuur') | float(21.0) }}
+    {% endif %}
+
+  buiten_temp: >
+    {% set temp = state_attr(weather_entity_id, 'temperature') %}
+    {% if temp is not none %}
+      {{ temp | float }}
+    {% else %}
+      {{ states('sensor.last_known_buiten_temp') | float(15.0) }}
+    {% endif %}
+
+  neerslag: >
+    {% set rain = state_attr(weather_entity_id, 'precipitation') %}
+    {% if rain is not none %}
+      {{ rain | float }}
+    {% else %}
+      0
+    {% endif %}
+
+trigger:
+  - platform: time_pattern
+    minutes: 5  # Elke 5 minuten controle
+  - platform: state
+    entity_id:
+      - !input 'temp_sensor_woonkamer'
+      - !input 'temp_sensor_slaapkamer'
+      - !input 'weather_sensor'
+
+condition: []
+
+action:
+  - service: system_log.write
+    data:
+      message: >
+        "Ventilatiecontrole uitgevoerd. Buiten temp: {{ buiten_temp }}°C, Woonkamer temp: {{ binnentemperatuur_woonkamer }}°C, Slaapkamer temp: {{ binnentemperatuur_slaapkamer }}°C, Neerslag: {{ neerslag }} mm."
+      level: info
+
+  # Woonkamer ventilator regeling
+  - choose:
+      - conditions:
+          # Ventilator wordt uitgeschakeld bij regen als 'enable_rain_shutdown' aan staat
+          - condition: template
+            value_template: "{{ neerslag >= rain_threshold_value and enable_rain_shutdown_woonkamer_value }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input 'fan_switch_woonkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Woonkamer uitgeschakeld vanwege regen."
+
+      - conditions:
+          # Ventilator wordt ingeschakeld als het droog is en de temperatuur boven de hysteresiswaarde is
+          - condition: template
+            value_template: "{{ neerslag < rain_threshold_value and binnentemperatuur_woonkamer >= desired_temp_woonkamer_value + hysteresis_value and buiten_temp < binnentemperatuur_woonkamer }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'fan_switch_woonkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Woonkamer ingeschakeld."
+
+  # Slaapkamer ventilator regeling
+  - choose:
+      - conditions:
+          # Ventilator wordt uitgeschakeld bij regen als 'enable_rain_shutdown' aan staat
+          - condition: template
+            value_template: "{{ neerslag >= rain_threshold_value and enable_rain_shutdown_slaapkamer_value }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input 'fan_switch_slaapkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Slaapkamer uitgeschakeld vanwege regen."
+
+      - conditions:
+          # Ventilator wordt ingeschakeld als het droog is en de temperatuur boven de hysteresiswaarde is
+          - condition: template
+            value_template: "{{ neerslag < rain_threshold_value and binnentemperatuur_slaapkamer >= desired_temp_slaapkamer_value + hysteresis_value and buiten_temp < binnentemperatuur_slaapkamer }}"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: !input 'fan_switch_slaapkamer'
+          - service: system_log.write
+            data:
+              message: "Ventilator Slaapkamer ingeschakeld."
+
+mode: single
