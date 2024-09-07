@@ -1,0 +1,165 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Tweaks (4 Ventilatoren) - Versie 2.68
+  description: >
+    Dit script regelt de ventilatie in meerdere kamers op basis van de binnentemperatuur, buitentemperatuur, neerslag en hysteresis. Elke ventilator kan individueel worden ingesteld, en er zijn tweaks voor schakeltijd, regenuitschakeling en hysteresis.
+
+    **Versie**: 2.68
+
+  domain: automation
+  input:
+    ventilator_section:
+      name: Ventilatoren
+      input:
+        fan_switch_woonkamer:
+          name: Ventilator Woonkamer
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_woonkamer:
+          name: Temperatuursensor Woonkamer
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_woonkamer:
+          name: Gewenste Kamertemperatuur Woonkamer
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_woonkamer:
+          name: Regenuitschakeling voor Woonkamer
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+
+        fan_switch_slaapkamer:
+          name: Ventilator Slaapkamer
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_slaapkamer:
+          name: Temperatuursensor Slaapkamer
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_slaapkamer:
+          name: Gewenste Kamertemperatuur Slaapkamer
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_slaapkamer:
+          name: Regenuitschakeling voor Slaapkamer
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+
+        fan_switch_kantoor:
+          name: Ventilator Kantoor
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_kantoor:
+          name: Temperatuursensor Kantoor
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_kantoor:
+          name: Gewenste Kamertemperatuur Kantoor
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_kantoor:
+          name: Regenuitschakeling voor Kantoor
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+
+        fan_switch_zolder:
+          name: Ventilator Zolder
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_zolder:
+          name: Temperatuursensor Zolder
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_zolder:
+          name: Gewenste Kamertemperatuur Zolder
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_zolder:
+          name: Regenuitschakeling voor Zolder
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+
+    weather_section:
+      name: Weerinstellingen
+      input:
+        weather_sensor:
+          name: Weersensor
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        hysteresis_value:
+          name: Hysteresis Waarde
+          description: "De marge om te voorkomen dat de ventilator te snel schakelt."
+          default: 0.5
+          selector:
+            number:
+              min: 0.1
+              max: 5.0
+              step: 0.1
+              unit_of_measurement: "°C"
+        rain_threshold_value:
+          name: Neerslagdrempel
+          description: "Minimale hoeveelheid neerslag om de ventilator uit te schakelen."
+          default: 0.1
+          selector:
+            number:
+              min: 0.0
+              max: 5.0
+              step: 0.1
+              unit_of_measurement: "mm"
+        minimum_temperature:
+          name: Minimum Temperatuur
+          description: "De minimum temperatuur voor ventilatie."
+          default: 5.0
+          selector:
+            number:
+              min: -10
+              max: 50
+              step: 0.5
+              unit_of_measurement: "°C"
+        enable_tuning:
+          name: Schakeltuning Inschakelen
+          description: "Voeg een extra afstemming toe om te voorkomen dat ventilators te snel schakelen."
+          default: false
+          selector:
+            boolean: {}
