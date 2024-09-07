@@ -1,16 +1,31 @@
-# Template sensoren om de laatste bekende waarden voor binnen- en buitentemperatuur op te slaan
+# Dit bestand bevat de sensoren die nodig zijn voor de ventilatie-automatisering
+# en houdt de laatste bekende temperaturen en neerslag bij.
+
 - platform: template
   sensors:
-    last_known_binnentemperatuur:
-      friendly_name: "Laatste bekende binnentemperatuur"
+    # Houdt de laatste bekende binnentemperatuur van de slaapkamer bij
+    last_known_binnentemperatuur_slaapkamer:
+      friendly_name: "Laatste bekende binnentemperatuur Slaapkamer"
       unit_of_measurement: "°C"
       value_template: >
         {% if states('sensor.sensor_slaapkamer_temperature') not in ['unknown', 'unavailable'] %}
           {{ states('sensor.sensor_slaapkamer_temperature') }}
         {% else %}
-          {{ states('sensor.last_known_binnentemperatuur') | float(21.0) }}
+          {{ states('sensor.last_known_binnentemperatuur_slaapkamer') | float(21.0) }}
         {% endif %}
 
+    # Houdt de laatste bekende binnentemperatuur van de woonkamer bij
+    last_known_binnentemperatuur_woonkamer:
+      friendly_name: "Laatste bekende binnentemperatuur Woonkamer"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% if states('sensor.thermostaat_woonkamer_binnentemperatuur') not in ['unknown', 'unavailable'] %}
+          {{ states('sensor.thermostaat_woonkamer_binnentemperatuur') }}
+        {% else %}
+          {{ states('sensor.last_known_binnentemperatuur_woonkamer') | float(21.0) }}
+        {% endif %}
+
+    # Houdt de laatste bekende buitentemperatuur bij
     last_known_buiten_temp:
       friendly_name: "Laatste bekende buitentemperatuur"
       unit_of_measurement: "°C"
@@ -19,4 +34,15 @@
           {{ state_attr('weather.buienradar', 'temperature') }}
         {% else %}
           {{ states('sensor.last_known_buiten_temp') | float(15.0) }}
+        {% endif %}
+
+    # Houdt de laatste bekende neerslaghoeveelheid bij
+    last_known_neerslag:
+      friendly_name: "Laatste bekende neerslag"
+      unit_of_measurement: "mm"
+      value_template: >
+        {% if state_attr('weather.buienradar', 'precipitation') is not none %}
+          {{ state_attr('weather.buienradar', 'precipitation') }}
+        {% else %}
+          0
         {% endif %}
