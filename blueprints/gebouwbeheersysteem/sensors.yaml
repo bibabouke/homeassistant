@@ -1,6 +1,3 @@
-# Dit bestand bevat de sensoren die nodig zijn voor de ventilatie-automatisering
-# en houdt de laatste bekende temperaturen en neerslag bij.
-
 - platform: template
   sensors:
     # Houdt de laatste bekende binnentemperatuur van de slaapkamer bij
@@ -23,6 +20,28 @@
           {{ states('sensor.thermostaat_woonkamer_binnentemperatuur') }}
         {% else %}
           {{ states('sensor.last_known_binnentemperatuur_woonkamer') | float(21.0) }}
+        {% endif %}
+
+    # Houdt de laatste bekende binnentemperatuur van het kantoor bij
+    last_known_binnentemperatuur_kantoor:
+      friendly_name: "Laatste bekende binnentemperatuur Kantoor"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% if states('sensor.sensor_kantoor_temperature') not in ['unknown', 'unavailable'] %}
+          {{ states('sensor.sensor_kantoor_temperature') }}
+        {% else %}
+          {{ states('sensor.last_known_binnentemperatuur_kantoor') | float(21.0) }}
+        {% endif %}
+
+    # Houdt de laatste bekende binnentemperatuur van de zolder bij
+    last_known_binnentemperatuur_zolder:
+      friendly_name: "Laatste bekende binnentemperatuur Zolder"
+      unit_of_measurement: "°C"
+      value_template: >
+        {% if states('sensor.sensor_zolder_temperature') not in ['unknown', 'unavailable'] %}
+          {{ states('sensor.sensor_zolder_temperature') }}
+        {% else %}
+          {{ states('sensor.last_known_binnentemperatuur_zolder') | float(21.0) }}
         {% endif %}
 
     # Houdt de laatste bekende buitentemperatuur bij
