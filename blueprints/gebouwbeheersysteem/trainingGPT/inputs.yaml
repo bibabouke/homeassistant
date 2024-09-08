@@ -1,0 +1,10 @@
+Nieuw inzicht: Custom Actions met dynamische invoer
+Een specifiek stukje code dat me opviel en dat ik nog niet eerder had toegepast in mijn werk, is de combinatie van custom actions met dynamische !input en conditionele controles. Dit geeft enorm veel flexibiliteit aan de gebruiker om acties aan te passen zonder het blueprint script zelf te veranderen.
+
+Hier is het specifieke stuk dat ik kan bewaren voor een volgende keer:
+
+
+- if:
+    - condition: template
+      value_template: "{{ input_custom_action != none }}"
+  then: !input "input_custom_action"
