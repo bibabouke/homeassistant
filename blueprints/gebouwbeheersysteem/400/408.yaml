@@ -1,0 +1,168 @@
+blueprint:
+  name: "Ventilatiesysteem 4.08"
+  description: >
+    Dit ventilatiesysteem regelt de ventilatoren in meerdere kamers op basis van 
+    de binnentemperatuur, buitentemperatuur, neerslag en hysteresis. De ventilatoren 
+    kunnen automatisch worden in- en uitgeschakeld op basis van temperatuurwijzigingen, 
+    buitenluchttemperatuur, en aanwezigheid via nabijheidssensoren.
+
+    Versie: 4.08
+    Motregen drempel: 0.3 mm/h. Pas deze waarde aan naar wens (regen bij 0.8 mm/h, harde regen bij 2.5 mm/h).
+
+  domain: automation
+
+  input:
+    fan_switch_woonkamer:
+      name: Ventilator Woonkamer
+      selector:
+        entity:
+          domain: switch
+
+    temp_sensor_woonkamer:
+      name: Temperatuursensor Woonkamer
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    desired_temp_woonkamer:
+      name: Gewenste temperatuur Woonkamer
+      default: 21
+      selector:
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+
+    disable_rain_shutdown_woonkamer:
+      name: Regen uitschakeling Woonkamer
+      default: false
+      selector:
+        boolean: {}
+
+    hysteresis:
+      name: Hysteresis
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5
+          unit_of_measurement: "°C"
+          step: 0.1
+
+    weather_sensor:
+      name: Weersensor
+      selector:
+        entity:
+          domain: weather
+
+    rain_threshold:
+      name: Drempelwaarde motregen
+      default: 0.3
+      selector:
+        number:
+          min: 0
+          max: 5
+          unit_of_measurement: "mm/h"
+          step: 0.1
+
+    vacation_mode:
+      name: Vakantiemodus
+      selector:
+        entity:
+          domain: input_boolean
+
+    proximity_sensor:
+      name: Nabijheidssensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: proximity
+
+    outside_temperature_threshold:
+      name: Buitentemperatuur Drempelwaarde
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 30
+          unit_of_measurement: "°C"
+          step: 1
+
+  trigger:
+    - platform: state
+      entity_id: !input temp_sensor_woonkamer
+      id: temperature_change
+
+    - platform: state
+      entity_id: !input weather_sensor
+      id: weather_change
+
+    - platform: state
+      entity_id: !input vacation_mode
+      id: vacation_mode_change
+
+    - platform: state
+      entity_id: !input proximity_sensor
+      id: proximity_change
+
+  condition:
+    - condition: state
+      entity_id: !input vacation_mode
+      state: "off"
+
+  action:
+    - choose:
+        - conditions:
+            - condition: numeric_state
+              entity_id: !input temp_sensor_woonkamer
+              below: "{{ states('sensor.' ~ !input.temp_sensor_woonkamer) | float - !input.hysteresis }}"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+        - conditions:
+            - condition: numeric_state
+              entity_id: !input temp_sensor_woonkamer
+              above: "{{ states('sensor.' ~ !input.temp_sensor_woonkamer) | float + !input.hysteresis }}"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ state_attr(!input.weather_sensor, 'precipitation') | float > !input.rain_threshold | float }}
+            - condition: state
+              entity_id: !input disable_rain_shutdown_woonkamer
+              state: "on"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ state_attr(!input.weather_sensor, 'temperature') | float < !input.outside_temperature_threshold | float }}
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: !input proximity_sensor
+              state: "away"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+  mode: single
