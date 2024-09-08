@@ -1,0 +1,94 @@
+blueprint:
+  name: Ventilator Automatisering
+  description: Automatisering voor ventilatoren op basis van temperatuur, vochtigheid, regen, en wind.
+  domain: automation
+  input:
+    ventilator_switch:
+      name: Ventilator Schakelaar
+      description: De switch die de ventilator aan of uit schakelt
+      selector:
+        entity:
+          domain: switch
+    temperatuurdrempel:
+      name: Temperatuurdrempel
+      description: De minimum temperatuur waarbij de ventilatoren niet aan mogen staan
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+    buitentemperatuur_sensor:
+      name: Buitentemperatuur Sensor
+      description: Sensor voor buitentemperatuur
+      selector:
+        entity:
+          domain: sensor
+    binnentemperatuur_sensor:
+      name: Binnentemperatuur Sensor
+      description: Sensor voor binnentemperatuur
+      selector:
+        entity:
+          domain: sensor
+    luchtvochtigheid_sensor:
+      name: Luchtvochtigheid Sensor
+      description: Sensor voor luchtvochtigheid
+      selector:
+        entity:
+          domain: sensor
+    regen_sensor:
+      name: Regen Sensor
+      description: Sensor voor regen
+      selector:
+        entity:
+          domain: sensor
+    wind_sensor:
+      name: Wind Sensor
+      description: Sensor voor wind
+      selector:
+        entity:
+          domain: sensor
+
+trigger:
+  - platform: time_pattern
+    minutes: '/5'  # Controleer elke 5 minuten
+
+condition:
+  - condition: numeric_state
+    entity_id: sensor.binnentemperatuur_sensor
+    below: "{{ temperatuurdrempel }}"
+  - condition: numeric_state
+    entity_id: sensor.buitentemperatuur_sensor
+    above: sensor.binnentemperatuur_sensor
+  - condition: numeric_state
+    entity_id: sensor.luchtvochtigheid_sensor
+    above: 30  # Voorbeeldwaarde, kan aangepast worden
+  - condition: state
+    entity_id: sensor.regen_sensor
+    state: 'no'
+  - condition: state
+    entity_id: sensor.wind_sensor
+    state: 'low'
+
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: switch.ventilator_switch
+            state: 'off'
+          - condition: numeric_state
+            entity_id: sensor.buitentemperatuur_sensor
+            above: sensor.binnentemperatuur_sensor
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.ventilator_switch
+    default:
+      - conditions:
+          - condition: state
+            entity_id: switch.ventilator_switch
+            state: 'on'
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: switch.ventilator_switch
