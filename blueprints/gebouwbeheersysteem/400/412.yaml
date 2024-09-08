@@ -1,0 +1,99 @@
+blueprint:
+  name: "Ventilatiesysteem versie 412"
+  description: >
+    Automatisering voor het in- en uitschakelen van ventilatoren op basis van binnentemperatuur en buitentemperatuur met hysteresis.
+
+  domain: automation
+
+  input:
+    fan_switch_woonkamer:
+      name: Ventilator Woonkamer
+      description: Ventilator in de woonkamer om te bedienen
+      selector:
+        entity:
+          domain: switch
+
+    temp_sensor_woonkamer:
+      name: Temperatuursensor Woonkamer
+      description: Sensor voor de binnentemperatuur in de woonkamer
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    temp_sensor_buiten:
+      name: Weersensor Buitentemperatuur
+      description: Sensor voor de buitentemperatuur om ventilatoracties te beperken bij koude buitenomstandigheden
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    desired_temp_woonkamer:
+      name: Gewenste temperatuur Woonkamer
+      description: De drempelwaarde voor de binnentemperatuur om de ventilator aan te zetten
+      default: 21
+      selector:
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+
+    hysteresis:
+      name: Hysteresis
+      description: Het verschil waarmee de ventilator wordt uitgeschakeld wanneer de temperatuur onder de drempel komt
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5
+          unit_of_measurement: "°C"
+          step: 0.1
+
+    temp_outside_min:
+      name: Minimum Buitentemperatuur
+      description: Minimale buitentemperatuur om te voorkomen dat de ventilator in de winter aangaat
+      default: 0
+      selector:
+        number:
+          min: -30
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+
+  variables:
+    temp_sensor_woonkamer: !input temp_sensor_woonkamer
+    temp_sensor_buiten: !input temp_sensor_buiten
+    fan_switch_woonkamer: !input fan_switch_woonkamer
+    desired_temp_woonkamer: !input desired_temp_woonkamer
+    hysteresis: !input hysteresis
+    temp_outside_min: !input temp_outside_min
+
+  trigger:
+    - platform: state
+      entity_id: !input temp_sensor_woonkamer
+    - platform: state
+      entity_id: !input temp_sensor_buiten
+
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ states(temp_sensor_woonkamer) | float > desired_temp_woonkamer | float }}"
+            - condition: template
+              value_template: "{{ states(temp_sensor_buiten) | float > temp_outside_min | float }}"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+        - conditions:
+            - condition: template
+              value_template: "{{ states(temp_sensor_woonkamer) | float < (desired_temp_woonkamer | float - hysteresis | float) }}"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+  mode: single
