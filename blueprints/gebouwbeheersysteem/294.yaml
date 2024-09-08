@@ -1,0 +1,126 @@
+blueprint:
+  name: Automatische Ventilator Besturing op Basis van Temperatuur - Versie 2.93
+  description: >
+    Dit script regelt de ventilator op basis van temperatuurmetingen binnen en buiten, 
+    met hysteresis om frequent schakelen te voorkomen. De ventilator wordt ingeschakeld als de 
+    binnentemperatuur boven een ingestelde drempelwaarde ligt en de buitentemperatuur onder een 
+    maximale waarde is. De ventilator wordt uitgeschakeld als de binnentemperatuur onder de drempelwaarde 
+    minus de hysteresiswaarde ligt of bij neerslag.
+
+    **Versie**: 2.93
+
+    **Te vinden op GitHub**: [Ventilatiesysteem 2.93](https://github.com/bibabouke/homeassistant/tree/main/blueprints/gebouwbeheersysteem)
+
+  domain: automation
+  input:
+    fan:
+      name: Ventilator
+      description: Ventilator die gecontroleerd moet worden
+      selector:
+        entity:
+          domain: switch
+    temp_inside:
+      name: Binnen Temperatuur
+      description: Temperatuur binnen je huis
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    temp_outside:
+      name: Buiten Temperatuur
+      description: Temperatuur buiten, voorkomt dat de ventilator aan gaat in de winter
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    hysteresis:
+      name: Hysteresis Waarde
+      description: Waarde voor hysteresis om frequent schakelen te voorkomen
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 10
+          unit_of_measurement: "°C"
+    temp_threshold:
+      name: Temperatuur Drempelwaarde
+      description: Drempelwaarde om de ventilator aan te zetten
+      default: 21
+      selector:
+        number:
+          min: 0
+          max: 50
+          unit_of_measurement: "°C"
+    temp_outside_max:
+      name: Maximale Buiten Temperatuur
+      description: Maximale buitentemperatuur om de ventilator aan te zetten
+      default: 20
+      selector:
+        number:
+          min: -10
+          max: 50
+          unit_of_measurement: "°C"
+    rain_sensor:
+      name: Neerslag Sensor
+      description: Sensor die neerslag detecteert (optioneel)
+      selector:
+        entity:
+          domain: binary_sensor
+    vacation_mode:
+      name: Vakantie Mode
+      description: Schakelaar die aangeeft of je op vakantie bent
+      selector:
+        entity:
+          domain: binary_sensor
+
+  trigger:
+    - platform: state
+      entity_id: !input temp_inside
+    - platform: state
+      entity_id: !input temp_outside
+    - platform: state
+      entity_id: !input rain_sensor
+    - platform: state
+      entity_id: !input vacation_mode
+
+  condition:
+    - condition: template
+      value_template: >
+        {% set inside_temp = states('sensor.temp_inside') | float %}
+        {% set outside_temp = states('sensor.temp_outside') | float %}
+        {% set rain = is_state('binary_sensor.rain_sensor', 'on') %}
+        {% set vacation = is_state('binary_sensor.vacation_mode', 'on') %}
+        {% set hysteresis = !input hysteresis %}
+        {% set threshold = !input temp_threshold %}
+        {% set outside_max = !input temp_outside_max %}
+
+        not vacation and not rain and
+        (inside_temp > (threshold + hysteresis) and outside_temp < outside_max) or
+        (inside_temp < (threshold - hysteresis) and outside_temp >= outside_max)
+
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: >
+                {% set inside_temp = states('sensor.temp_inside') | float %}
+                {% set outside_temp = states('sensor.temp_outside') | float %}
+                {% set hysteresis = !input hysteresis %}
+                {% set threshold = !input temp_threshold %}
+                {% set outside_max = !input temp_outside_max %}
+                inside_temp > (threshold + hysteresis) and outside_temp < outside_max
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan
+        - conditions:
+            - condition: template
+              value_template: >
+                {% set inside_temp = states('sensor.temp_inside') | float %}
+                {% set threshold = !input temp_threshold %}
+                {% set hysteresis = !input hysteresis %}
+                inside_temp < (threshold - hysteresis)
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan
