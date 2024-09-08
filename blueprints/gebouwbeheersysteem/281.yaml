@@ -1,0 +1,157 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Tweaks (4 Ventilatoren) - Versie 2.81
+  description: >
+    Dit script regelt de ventilatie in meerdere kamers op basis van de binnentemperatuur, buitentemperatuur, neerslag en hysteresis. Elke ventilator kan individueel worden ingesteld, en er zijn tweaks voor schakeltijd, regenuitschakeling en hysteresis.
+
+    **Versie**: 2.81
+
+  domain: automation
+  input:
+    ventilator_section:
+      name: Ventilatoren
+      description: Configureer de ventilatoren en temperatuursensoren
+      input:
+        fan_switch_woonkamer:
+          name: Ventilator Woonkamer
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_woonkamer:
+          name: Temperatuursensor Woonkamer
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_woonkamer:
+          name: Gewenste Kamertemperatuur Woonkamer
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_woonkamer:
+          name: Regenuitschakeling voor Woonkamer
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+
+        fan_switch_slaapkamer:
+          name: Ventilator Slaapkamer
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_slaapkamer:
+          name: Temperatuursensor Slaapkamer
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_slaapkamer:
+          name: Gewenste Kamertemperatuur Slaapkamer
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+
+    weather_section:
+      name: Weersensoren
+      description: Configureer de weersensoren
+      input:
+        weather_sensor:
+          name: Weersensor
+          description: "Selecteer de weersensor voor buitentemperatuur en neerslag."
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+
+    tweaks_section:
+      name: Tweaks
+      description: Stel de tweakers in
+      input:
+        hysteresis_value:
+          name: Hysteresis Waarde
+          description: De marge om te voorkomen dat de ventilator te snel schakelt.
+          default: 0.5
+          selector:
+            number:
+              min: 0.1
+              max: 5.0
+              step: 0.1
+              unit_of_measurement: "°C"
+        rain_threshold_value:
+          name: Neerslagdrempel
+          description: Minimale hoeveelheid neerslag om de ventilator uit te schakelen.
+          default: 0.1
+          selector:
+            number:
+              min: 0.0
+              max: 5.0
+              step: 0.1
+              unit_of_measurement: "mm"
+        minimale_schakeltijd:
+          name: Minimale Schakeltijd
+          description: Minimale tijd tussen schakelingen van de ventilator.
+          default: 1.0
+          selector:
+            number:
+              min: 0.1
+              max: 60.0
+              step: 0.1
+              unit_of_measurement: "minuten"
+
+    vakantie_schakelaar:
+      name: Vakantie Schakelaar
+      description: "Selecteer de schakelaar die aangeeft of bewoners op vakantie zijn."
+      selector:
+        entity:
+          domain: binary_sensor
+
+  trigger:
+    - platform: state
+      entity_id:
+        - !input temp_sensor_woonkamer
+        - !input temp_sensor_slaapkamer
+        - !input weather_sensor
+
+  condition:
+    - condition: state
+      entity_id: !input vakantie_schakelaar
+      state: 'off'
+
+  action:
+    - service: system_log.write
+      data:
+        message: >
+          "Ventilatiecontrole uitgevoerd. Buiten temp: {{ state_attr(!input.weather_sensor, 'temperature') }}°C, Woonkamer temp: {{ states(!input.temp_sensor_woonkamer) }}°C, Slaapkamer temp: {{ states(!input.temp_sensor_slaapkamer) }}°C."
+        level: info
+
+    - choose:
+        - conditions:
+            - condition: numeric_state
+              entity_id: !input temp_sensor_woonkamer
+              above: '{{ input.desired_temp_woonkamer | float + input.hysteresis_value | float }}'
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan_switch_woonkamer
+        - conditions:
+            - condition: numeric_state
+              entity_id: !input temp_sensor_slaapkamer
+              above: '{{ input.desired_temp_slaapkamer | float + input.hysteresis_value | float }}'
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan_switch_slaapkamer'
+      default:
+        - service: switch.turn_off
+          target:
+            entity_id:
+              - !input fan_switch_woonkamer
+              - !input fan_switch_slaapkamer
