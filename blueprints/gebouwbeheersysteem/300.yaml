@@ -1,0 +1,155 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Tweaks (4 Ventilatoren) - Versie 2.64
+  description: >
+    Dit script regelt de ventilatie in meerdere kamers op basis van de binnentemperatuur, buitentemperatuur, neerslag en hysteresis. Elke ventilator kan individueel worden ingesteld, en er zijn tweaks voor schakeltijd, regenuitschakeling en hysteresis.
+
+    **Versie**: 2.64
+
+    **Te vinden op GitHub**: [Ventilatiesysteem 2.64](https://github.com/bibabouke/homeassistant/tree/main/blueprints/gebouwbeheersysteem)
+
+  domain: automation
+  input:
+    # Sectie Ventilatoren
+    ventilator_section:
+      name: Ventilatoren
+      icon: mdi:fan
+      input:
+        fan_switch_woonkamer:
+          name: Ventilator Woonkamer
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_woonkamer:
+          name: Temperatuursensor Woonkamer
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_woonkamer:
+          name: Gewenste Kamertemperatuur Woonkamer
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_woonkamer:
+          name: Regenuitschakeling voor Woonkamer
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+        
+        # Slaapkamer
+        fan_switch_slaapkamer:
+          name: Ventilator Slaapkamer
+          selector:
+            entity:
+              domain: switch
+        temp_sensor_slaapkamer:
+          name: Temperatuursensor Slaapkamer
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+        desired_temp_slaapkamer:
+          name: Gewenste Kamertemperatuur Slaapkamer
+          default: 21.0
+          selector:
+            number:
+              min: 10
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
+        disable_rain_shutdown_slaapkamer:
+          name: Regenuitschakeling voor Slaapkamer
+          description: "Schakel ventilator uit bij regen."
+          default: false
+          selector:
+            boolean: {}
+
+        # Voeg hier andere kamers toe...
+
+        # Vakantieschakeling
+        vacation_mode:
+          name: Vakantieschakeling
+          description: "Schakel ventilatoren uit als bewoners op vakantie zijn."
+          default: false
+          selector:
+            entity:
+              domain: input_boolean
+
+    # Weather Sensor
+    weather_sensor:
+      name: Weer Sensor
+      selector:
+        entity:
+          domain: weather
+
+    # Algemene instellingen
+    global_settings:
+      name: Algemene Instellingen
+      input:
+        hysteresis:
+          name: Hysteresis
+          description: "De hysteresis voor temperatuurregeling."
+          default: 0.5
+          selector:
+            number:
+              min: 0
+              max: 5
+              step: 0.1
+              unit_of_measurement: "°C"
+
+        rain_shutdown_time:
+          name: Regenuitschakeling Tijd
+          description: "De tijd in seconden die de ventilator uitgeschakeld blijft bij regen."
+          default: 300
+          selector:
+            number:
+              min: 0
+              max: 3600
+              step: 10
+              unit_of_measurement: "s"
+
+  trigger:
+    - platform: state
+      entity_id: 
+        - "{{ temp_sensor_woonkamer }}"
+        - "{{ temp_sensor_slaapkamer }}"
+        # Voeg hier andere sensoren toe...
+      to: 'on'
+
+  condition:
+    - condition: template
+      value_template: "{{ not is_state(vacation_mode, 'on') }}"
+      
+    - condition: template
+      value_template: "{{ state_attr(weather_sensor, 'precipitation') < 1 or not disable_rain_shutdown_woonkamer }}"
+
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ states(temp_sensor_woonkamer) | float < desired_temp_woonkamer - hysteresis }}"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: "{{ fan_switch_woonkamer }}"
+        
+        - conditions:
+            - condition: template
+              value_template: "{{ states(temp_sensor_woonkamer) | float > desired_temp_woonkamer + hysteresis }}"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: "{{ fan_switch_woonkamer }}"
+
+        # Herhaal bovenstaande voor andere kamers...
+        
+    - service: system_log.write
+      data:
+        level: info
+        message: >
+          Ventilatie updates: Woonkamer -> {{ states(temp_sensor_woonkamer) }} °C
