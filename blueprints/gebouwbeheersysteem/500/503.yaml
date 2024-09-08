@@ -1,0 +1,71 @@
+blueprint:
+  name: Ventilator Automatisering
+  description: Automatisering voor ventilatoren op basis van temperatuur, vochtigheid, regen, en wind.
+  domain: automation
+  input:
+    ventilator_switch:
+      name: Ventilator Schakelaar
+      description: De switch die de ventilator aan of uit schakelt
+      selector:
+        entity:
+          domain: switch
+    temperatuurdrempel:
+      name: Temperatuurdrempel
+      description: De minimum temperatuur waarbij de ventilatoren niet aan mogen staan
+      default: 21
+      selector:
+        number:
+          min: 15
+          max: 30
+          step: 0.5
+    weer_sensor:
+      name: Weer Sensor
+      description: De weer sensor voor buitentemperatuur, regen, en wind (bijvoorbeeld weather.buienradar)
+      selector:
+        entity:
+          domain: weather
+    binnentemperatuur_sensor:
+      name: Binnentemperatuur Sensor
+      description: Sensor voor binnentemperatuur
+      selector:
+        entity:
+          domain: sensor
+    binnensensor_luchtvochtigheid:
+      name: Binnen Luchtvochtigheid Sensor
+      description: Sensor voor luchtvochtigheid binnen
+      selector:
+        entity:
+          domain: sensor
+
+trigger:
+  - platform: time_pattern
+    minutes: '/5'  # Controleer elke 5 minuten
+
+condition:
+  - condition: numeric_state
+    entity_id: sensor.binnentemperatuur
+    above: "{{ temperatuurdrempel | float }}"  # Zorg ervoor dat dit een float is
+
+action:
+  - choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: weather.{{ weer_sensor }}
+            attribute: temperature
+            below: "{{ states('sensor.binnentemperatuur') | float }}"
+          - condition: numeric_state
+            entity_id: weather.{{ weer_sensor }}
+            attribute: rain
+            below: 0.1  # Bijvoorbeeld, weinig of geen regen
+          - condition: numeric_state
+            entity_id: weather.{{ weer_sensor }}
+            attribute: wind_speed
+            below: 10  # Bijv. maximale windspeed
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: "{{ ventilator_switch }}"
+      default:
+        - service: switch.turn_off
+          target:
+            entity_id: "{{ ventilator_switch }}"
