@@ -1,0 +1,143 @@
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Tweaks (4 Ventilatoren) - Versie 2.91
+  description: >
+    Dit script regelt de ventilatie in meerdere kamers op basis van temperatuurmetingen, neerslag en hysteresis. 
+    Elke ventilator kan individueel worden ingesteld, en er zijn tweaks voor schakeltijd, regenuitschakeling en hysteresis.
+    
+    **Versie**: 2.91
+
+    **Te vinden op GitHub**: [Ventilatiesysteem 2.91](https://github.com/bibabouke/homeassistant/tree/main/blueprints/gebouwbeheersysteem)
+
+  domain: automation
+  input:
+    woonkamer_temperature:
+      name: Woonkamer Temperatuur Sensor
+      description: Temperatuur sensor in de woonkamer
+      selector:
+        entity:
+          domain: sensor
+    slaapkamer_temperature:
+      name: Slaapkamer Temperatuur Sensor
+      description: Temperatuur sensor in de slaapkamer
+      selector:
+        entity:
+          domain: sensor
+    buiten_weather:
+      name: Buiten Weer Sensor
+      description: Weer sensor voor neerslag
+      selector:
+        entity:
+          domain: sensor
+    vakantie_schakelaar:
+      name: Vakantie Schakelaar
+      description: Schakelaar die vakantie-status aangeeft
+      selector:
+        entity:
+          domain: binary_sensor
+    ventilator_1:
+      name: Ventilator 1
+      description: Eerste ventilator
+      selector:
+        entity:
+          domain: switch
+    ventilator_2:
+      name: Ventilator 2
+      description: Tweede ventilator
+      selector:
+        entity:
+          domain: switch
+    ventilator_3:
+      name: Ventilator 3
+      description: Derde ventilator
+      selector:
+        entity:
+          domain: switch
+    ventilator_4:
+      name: Ventilator 4
+      description: Vierde ventilator
+      selector:
+        entity:
+          domain: switch
+    hysteresis_value:
+      name: Hysteresis Waarde
+      description: Hysteresis waarde voor temperatuur
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+    regendrempel_value:
+      name: Regendrempel Waarde
+      description: Minimale hoeveelheid neerslag om ventilatoren uit te schakelen
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+    minimale_schakeltijd:
+      name: Minimale Schakeltijd
+      description: Minimale tijd tussen schakelingen
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 10
+
+  trigger:
+    - platform: state
+      entity_id: !input 'woonkamer_temperature'
+    - platform: state
+      entity_id: !input 'slaapkamer_temperature'
+    - platform: state
+      entity_id: !input 'buiten_weather'
+    - platform: state
+      entity_id: !input 'vakantie_schakelaar'
+
+  condition:
+    - condition: template
+      value_template: >
+        {% set vakantie_schakelaar = is_state( !input 'vakantie_schakelaar', 'on') %}
+        {% set neerslag = state_attr( !input 'buiten_weather', 'precipitation') %}
+        {% set hysteresis = !input 'hysteresis_value' | float %}
+        {% set regendrempel = !input 'regendrempel_value' | float %}
+        {% set woonkamer_temp = states( !input 'woonkamer_temperature') | float %}
+        {% set slaapkamer_temp = states( !input 'slaapkamer_temperature') | float %}
+        {% if vakantie_schakelaar %}
+          false
+        {% elif neerslag > regendrempel %}
+          false
+        {% elif woonkamer_temp > (states( !input 'woonkamer_temperature') | float + hysteresis) %}
+          true
+        {% elif slaapkamer_temp > (states( !input 'slaapkamer_temperature') | float + hysteresis) %}
+          true
+        {% else %}
+          false
+        {% endif %}
+
+  action:
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ is_state( !input 'vakantie_schakelaar', 'off') and
+                (state_attr( !input 'buiten_weather', 'precipitation') | float <= !input 'regendrempel_value') and
+                (states( !input 'woonkamer_temperature') | float > (states( !input 'woonkamer_temperature') | float + !input 'hysteresis_value')) or
+                (states( !input 'slaapkamer_temperature') | float > (states( !input 'slaapkamer_temperature') | float + !input 'hysteresis_value')) }}
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: 
+                  - !input 'ventilator_1'
+                  - !input 'ventilator_2'
+                  - !input 'ventilator_3'
+                  - !input 'ventilator_4'
+        default:
+          - service: switch.turn_off
+            target:
+              entity_id: 
+                - !input 'ventilator_1'
+                - !input 'ventilator_2'
+                - !input 'ventilator_3'
+                - !input 'ventilator_4'
+
+  mode: single
