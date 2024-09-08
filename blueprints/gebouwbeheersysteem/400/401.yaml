@@ -1,0 +1,139 @@
+blueprint:
+  name: "Ventilatiesysteem 4.01"
+  description: >
+    Dit ventilatiesysteem regelt de ventilatoren in maximaal 4 kamers op basis van 
+    de binnentemperatuur, buitentemperatuur, en neerslag. Er is een globale hysteresis
+    en een regenuitschakeling voor elke kamer. Bij handmatige schakeling van een ventilator
+    wordt de automatisering tijdelijk uitgeschakeld (Overwerktimer). 
+
+    Versie: 4.01
+    Motregen drempel: 0.3 mm/h. Pas deze waarde aan naar wens (regen bij 0.8 mm/h, harde regen bij 2.5 mm/h).
+  domain: automation
+  input:
+    # Woonkamer parameters
+    fan_switch_woonkamer:
+      name: Ventilator Woonkamer
+      description: "Entiteit van de schakelaar voor de ventilator in de woonkamer"
+      selector:
+        entity:
+          domain: switch
+
+    temp_sensor_woonkamer:
+      name: Temperatuursensor Woonkamer
+      description: "Entiteit van de temperatuursensor in de woonkamer"
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    desired_temp_woonkamer:
+      name: Gewenste temperatuur Woonkamer
+      description: "In te stellen temperatuur voor de woonkamer (standaard 21°C)"
+      default: 21
+      selector:
+        number:
+          min: 10
+          max: 30
+          unit_of_measurement: "°C"
+          step: 0.5
+
+    disable_rain_shutdown_woonkamer:
+      name: Regen uitschakeling Woonkamer
+      description: "Zet de ventilator uit bij regen in de woonkamer"
+      default: false
+      selector:
+        boolean: {}
+
+    # Globale instellingen
+    hysteresis:
+      name: Hysteresis
+      description: "Globale hysteresis voor aan/uit-schakeling van ventilatoren"
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5
+          unit_of_measurement: "°C"
+          step: 0.1
+
+    weather_sensor:
+      name: Weersensor
+      description: "De sensor die de neerslag en buitentemperatuur meet (bijv. Buienradar)"
+      selector:
+        entity:
+          domain: weather
+
+    rain_threshold:
+      name: Drempelwaarde motregen
+      description: "Standaard drempel voor motregen is 0.3 mm/h. Pas dit aan op basis van jouw situatie."
+      default: 0.3
+      selector:
+        number:
+          min: 0
+          max: 5
+          unit_of_measurement: "mm/h"
+          step: 0.1
+
+    vacation_mode:
+      name: Vakantiemodus
+      description: "Schakel de vakantiemodus in, indien van toepassing (optioneel)"
+      selector:
+        entity:
+          domain: input_boolean
+
+  trigger:
+    # Trigger bij temperatuurwijziging in de woonkamer
+    - platform: state
+      entity_id: !input temp_sensor_woonkamer
+
+    # Trigger bij wijziging in weersensor (bijv. regen)
+    - platform: state
+      entity_id: !input weather_sensor
+
+    # Trigger bij wijziging van de vakantiemodus
+    - platform: state
+      entity_id: !input vacation_mode
+
+  condition:
+    # Voorwaarde: Alleen activeren als vakantiemodus uitstaat
+    - condition: state
+      entity_id: !input vacation_mode
+      state: "off"
+
+  action:
+    - choose:
+        # Actie bij temperatuur onder de ingestelde waarde minus hysteresis
+        - conditions:
+            - condition: numeric_state
+              entity_id: !input temp_sensor_woonkamer
+              below: "{{ !input.desired_temp_woonkamer - !input.hysteresis }}"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+        # Actie bij temperatuur boven de ingestelde waarde plus hysteresis
+        - conditions:
+            - condition: numeric_state
+              entity_id: !input temp_sensor_woonkamer
+              above: "{{ !input.desired_temp_woonkamer + !input.hysteresis }}"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+    # Controleer op neerslag en schakel ventilator uit indien nodig
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: >
+                {{ states.weather.buienradar.attributes.precipitation > !input.rain_threshold }}
+            - condition: state
+              entity_id: !input disable_rain_shutdown_woonkamer
+              state: "on"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: !input fan_switch_woonkamer
+
+  mode: single
