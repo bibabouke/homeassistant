@@ -1,0 +1,207 @@
+blueprint:
+  name: Insectenlamp Automatisering v1.05
+  description: >
+    Automatische bediening van insectenlampen op basis van temperatuur, luchtvochtigheid, UV-straling,
+    regen, en seizoenen. Optimaliseert de tijd en duur waarop de lampen aan staan, en houdt rekening met de
+    activiteit van insecten. Fallback-waarden, hysteresis, en pauze tussen cycli zijn instelbaar in de UI.
+  
+  domain: automation
+  input:
+
+    # Sectie Insectenlampen
+    insect_lamps:
+      name: Insectenlampen
+      description: Selecteer de insectenlampen die je wilt aansturen.
+      selector:
+        target:
+          entity:
+            domain: switch
+
+    movement_sensor:
+      name: Bewegingssensor
+      description: Selecteer de sensor die beweging detecteert.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    # Sectie Weer
+    weather_buienradar:
+      name: Weersensor (weather.buienradar)
+      description: Selecteer de weather.buienradar sensor voor algemene weerdata.
+      selector:
+        entity:
+          domain: weather
+
+    min_temp:
+      name: Minimale temperatuur voor activatie (in °C)
+      description: Minimale temperatuur waarbij insecten actief worden.
+      default: 20
+      selector:
+        number:
+          min: 10
+          max: 35
+          unit_of_measurement: °C
+
+    max_temp:
+      name: Maximale temperatuur voor activatie (in °C)
+      description: Maximale temperatuur waarbij insecten actief zijn.
+      default: 35
+      selector:
+        number:
+          min: 20
+          max: 45
+          unit_of_measurement: °C
+
+    min_humidity:
+      name: Minimale luchtvochtigheid voor activatie (in %)
+      description: Minimale luchtvochtigheid waarbij insecten actief worden.
+      default: 60
+      selector:
+        number:
+          min: 40
+          max: 100
+          unit_of_measurement: "%"
+
+    uv_sensor:
+      name: UV-Straling sensor
+      description: Selecteer de sensor die de UV-straling meet.
+      selector:
+        entity:
+          domain: sensor
+
+    min_uv:
+      name: Minimale UV-straling voor activatie (W/m²)
+      description: Minimale UV-straling voor activatie van de lamp.
+      default: 200
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: "W/m²"
+
+    # Sectie Tweak
+    seasonal_mode:
+      name: Seizoensmodus
+      description: Kies tussen zomer- of wintermodus.
+      default: 'Zomerstand'
+      selector:
+        select:
+          options:
+            - 'Zomerstand'
+            - 'Winterstand'
+
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: Schakel de vakantiemodus in. Tijdens vakantie worden de lampen alleen geactiveerd bij beweging.
+      selector:
+        entity:
+          domain: input_boolean
+
+    hysteresis_temp:
+      name: Hysteresis voor temperatuur (in °C)
+      description: Hysteresis voorkomt dat de lamp te snel in- of uitschakelt bij temperatuurwisselingen.
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          unit_of_measurement: "°C"
+
+    hysteresis_humidity:
+      name: Hysteresis voor luchtvochtigheid (in %)
+      description: Hysteresis voorkomt dat de lamp te snel schakelt bij wisselende luchtvochtigheid.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 20
+          unit_of_measurement: "%"
+
+    insect_lamp_duration:
+      name: Tijd dat de lamp aan blijft (in minuten)
+      description: Stel de tijd in dat de insectenlamp aan blijft.
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 60
+          unit_of_measurement: "minuten"
+
+    insect_lamp_cycles:
+      name: Aantal activatiecycli per avond
+      description: Stel in hoe vaak de lamp geactiveerd moet worden per avond.
+      default: 4
+      selector:
+        number:
+          min: 1
+          max: 10
+          unit_of_measurement: "cycli"
+
+    cycle_pause:
+      name: Pauze tussen activatiecycli (in minuten)
+      description: Stel de pauze in tussen de activatiecycli.
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 60
+          unit_of_measurement: "minuten"
+
+variables:
+  last_known_temperature: >
+    {% set temp = state_attr('!input weather_buienradar', 'temperature') %}
+    {{ temp if temp not in ['unknown', 'unavailable'] else 20.0 }}
+
+  last_known_humidity: >
+    {% set humidity = state_attr('!input weather_buienradar', 'humidity') %}
+    {{ humidity if humidity not in ['unknown', 'unavailable'] else 60 }}
+
+  last_known_precipitation: >
+    {% set precipitation = state_attr('!input weather_buienradar', 'precipitation_unit') %}
+    {{ precipitation if precipitation not in ['unknown', 'unavailable'] else 0.0 }}
+
+trigger:
+  - platform: state
+    entity_id: !input weather_buienradar
+    attribute: temperature
+
+condition:
+  - condition: template
+    value_template: >
+      {{ (last_known_temperature >= (input_min_temp | float) + (input_hysteresis_temp | float)) and 
+      (last_known_temperature <= (input_max_temp | float) - (input_hysteresis_temp | float)) }}
+  
+  - condition: template
+    value_template: >
+      {{ (last_known_humidity >= (input_min_humidity | float) + (input_hysteresis_humidity | float)) }}
+
+  - condition: template
+    value_template: >
+      {{ last_known_precipitation <= 0.5 }}  # Stel een drempel voor de neerslagwaarde.
+
+  - condition: state
+    entity_id: !input vacation_mode
+    state: 'off'
+
+action:
+  - service: switch.turn_on
+    target:
+      entity_id: !input insect_lamps
+
+  - delay: "{{ !input insect_lamp_duration }}"
+
+  - service: switch.turn_off
+    target:
+      entity_id: !input insect_lamps
+
+  - repeat:
+      count: !input insect_lamp_cycles
+      sequence:
+        - delay: "{{ !input cycle_pause }}"
+        - service: switch.turn_on
+          target:
+            entity_id: !input insect_lamps
+        - delay: "{{ !input insect_lamp_duration }}"
+        - service: switch.turn_off
+          target:
+            entity_id: !input insect_lamps
