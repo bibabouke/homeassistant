@@ -1,0 +1,29 @@
+2. Gebruik van Fallback-waarden in Blueprints
+Omschrijving: Fallback-waarden zijn belangrijk in situaties waar sensoren tijdelijk geen data doorgeven, bijvoorbeeld wanneer de status van een sensor unknown of unavailable is. Door een fallback-waarde te gebruiken, zorg je ervoor dat je automatisering blijft werken zonder vast te lopen.
+
+Voorbeeldcode:
+
+variables:
+  binnentemperatuur: >
+    {% set temp = states(temp_sensor_entity_id) %}
+    {% if temp not in ['unknown', 'unavailable'] %}
+      {{ temp | float }}
+    {% else %}
+      {{ 21.0 }}  # Fallback-waarde als de sensor geen data geeft
+    {% endif %}
+
+  buiten_temp: >
+    {% set temp = state_attr(weather_entity_id, 'temperature') %}
+    {% if temp is not none %}
+      {{ temp | float }}
+    {% else %}
+      {{ 15.0 }}  # Fallback-waarde voor buitentemperatuur
+    {% endif %}
+
+
+Toelichting:
+
+binnentemperatuur: Als de temperatuursensor geen waarde kan leveren, wordt een standaard fallback-waarde van 21.0°C gebruikt.
+buiten_temp: Voor de buitentemperatuur wordt een fallback-waarde van 15.0°C gebruikt als de weerentiteit geen temperatuurwaarde heeft.
+
+
