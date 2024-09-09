@@ -1,0 +1,14 @@
+3. Bijhouden van Blueprint Versies
+Omschrijving: Het bijhouden van versienummers in blueprints helpt om wijzigingen en updates duidelijk te identificeren. Elke keer dat een aanpassing wordt gedaan, krijgt het script een nieuw versienummer. Dit helpt zowel ontwikkelaars als gebruikers om te weten welke versie in gebruik is.
+
+Voorbeeldcode:
+
+# Versie 5.12
+
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Fallbacks
+  description: >
+    GMS Ventilatie zorgt ervoor dat de kamertemperatuur gereguleerd wordt door buitenlucht te gebruiken met simpele ventilatoren. Deze worden in en uitgeschakeld op basis van temperatuursensoren in huis en de weathersensoren buiten.
+  domain: automation
+  input:
+    ...
