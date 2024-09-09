@@ -1,0 +1,36 @@
+Duidelijke Documentatie in Blueprints
+Omschrijving: Het toevoegen van duidelijke en uitgebreide documentatie binnen blueprints helpt gebruikers om te begrijpen wat elke sectie doet en welke waarden ze kunnen instellen. Dit maakt het script begrijpelijker en onderhoudsvriendelijker.
+
+Voorbeeldcode:
+
+blueprint:
+  name: Ventilatiesysteem met Hysteresis en Fallbacks
+  description: >
+    GMS Ventilatie zorgt ervoor dat de kamertemperatuur gereguleerd wordt door buitenlucht te gebruiken met simpele ventilatoren. Deze worden in en uitgeschakeld op basis van temperatuursensoren in huis en de weathersensoren buiten.
+  domain: automation
+  input:
+
+    # Sectie Ventilatoren
+    ventilator_section:
+      name: Ventilatoren
+      icon: mdi:fan
+      description: >
+        Deze sectie bevat de instellingen voor de ventilatoren in de verschillende ruimtes. Elke ventilator wordt bediend door een schakelaar en een temperatuursensor.
+      input:
+        fan_switch:
+          name: Ventilator Schakelaar
+          description: "De ventilator die wordt bestuurd."
+          selector:
+            entity:
+              domain: switch
+        temp_sensor:
+          name: Temperatuursensor Binnen
+          description: "De sensor voor de temperatuur binnen."
+          selector:
+            entity:
+              domain: sensor
+              device_class: temperature
+Toelichting:
+
+Beschrijving: De blueprint bevat een duidelijke en gedetailleerde beschrijving van wat het script doet.
+Input uitleg: Elke input in de blueprint krijgt een duidelijke omschrijving, zoals de fan_switch en temp_sensor, zodat gebruikers weten welke entiteit ze moeten selecteren en wat elke input doet.
