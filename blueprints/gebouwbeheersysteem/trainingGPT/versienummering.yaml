@@ -12,3 +12,6 @@ blueprint:
   domain: automation
   input:
     ...
+Toelichting:
+
+Versienummering: Het versienummer wordt bovenaan het script vermeld (Versie 5.12), zowel in de YAML-bestanden als in de blueprint zelf, zodat iedereen de actuele versie kan volgen.
