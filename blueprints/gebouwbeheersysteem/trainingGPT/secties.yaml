@@ -1,0 +1,18 @@
+Het stuk code dat zorgt voor de uitklapbare secties in Home Assistant blueprints, en de instelling om een sectie standaard ingeklapt of uitgeklapt te tonen, ziet er zo uit:
+
+# Voorbeeld van een sectie met uitklapbare optie
+sectie_naam:
+  name: Naam van de sectie
+  icon: mdi:icon_name  # Optioneel: een icoon voor de sectie
+  collapsed: true  # Zorgt ervoor dat de sectie standaard ingeklapt is
+  input:
+    entity:
+      name: Beschrijving van de entiteit
+      selector:
+        entity:
+          domain: domain_name
+
+Uitleg:
+collapsed: true: Dit zorgt ervoor dat de sectie standaard is ingeklapt. Als je wilt dat de sectie standaard geopend is, kun je dit instellen op false.
+icon: mdi:icon_name: Je kunt een optioneel icoon toevoegen om de sectie visueel aantrekkelijker te maken.
+Dit is de kern van wat je nodig hebt om uitklapbare secties te maken in Home Assistant blueprints.
