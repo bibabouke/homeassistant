@@ -1,0 +1,20 @@
+# Input voor het update-interval, waarmee de gebruiker kan instellen hoe vaak de automatisering controleert
+update_interval:
+  name: Update Interval / Minimale Schakeltijd
+  description: >
+    Hoe vaak de automatisering controleert (in minuten) en de minimale tijd dat de ventilator
+    aan of uit moet blijven voordat deze weer schakelt.
+  default: 5  # Standaardwaarde voor update-interval is 5 minuten
+  selector:
+    number:
+      min: 1  # Minimale waarde is 1 minuut
+      max: 60  # Maximale waarde is 60 minuten
+      step: 1
+      unit_of_measurement: "minuten"
+
+# Variabele voor het update-interval, die de waarde van de input bewaart
+update_interval_minutes: !input 'update_interval'
+
+# Delay die de tijd instelt tussen herhalingen van de automatisering
+# De waarde is gebaseerd op de 'update_interval_minutes' variabele
+- delay: "{{ update_interval_minutes * 60 }}"  # Vermenigvuldigt minuten met 60 om de delay in seconden te zetten
