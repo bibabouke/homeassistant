@@ -39,7 +39,7 @@ blueprint:
         number:
           min: 10
           max: 35
-          unit_of_measurement: °C
+          unit_of_measurement: "°C"
 
     max_temp:
       name: Maximale Temperatuur voor Activatie (in °C)
@@ -50,7 +50,7 @@ blueprint:
         number:
           min: 20
           max: 45
-          unit_of_measurement: °C
+          unit_of_measurement: "°C"
 
     min_humidity:
       name: Minimale Luchtvochtigheid voor Activatie (in %)
@@ -61,88 +61,85 @@ blueprint:
         number:
           min: 40
           max: 100
-          unit_of_measurement: %
-
+          unit_of_measurement: "%"
+          
     insect_lamp_duration:
-      name: Duur van de Insectenlampen (in minuten)
+      name: Insectenlamp Duur
       description: >
-        De tijdsduur dat de insectenlampen aan moeten blijven na detectie van insectenactiviteit.
-      default: 10
+        De tijdsduur dat de insectenlampen aan moeten blijven na detectie van activiteit. Gebruik het formaat 'HH:MM:SS'.
+      default: "00:30:00"
       selector:
-        number:
-          min: 1
-          max: 60
-          unit_of_measurement: 'min'
+        duration:
 
-    manual_override_sensor:
-      name: Handmatige Inschakeling Sensor (Optioneel)
+    manual_override:
+      name: Handmatige Bediening
       description: >
-        Selecteer een sensor die handmatig de lampen kan in- en uitschakelen voor een bepaalde tijd.
-        Dit veld is optioneel en kan worden weggelaten als je geen handmatige bediening wilt.
+        Optioneel: Selecteer een schakelaar of sensor die de lampen handmatig kan in- of uitschakelen voor een bepaalde tijd.
       selector:
         entity:
-          domain: binary_sensor
+          domain: switch
           multiple: false
-
-    vacation_mode:
-      name: Vakantieschakelaar
-      description: >
-        Schakelt de vakantiemodus in of uit via een dashboardknop.
-      selector:
-        entity:
-          domain: input_boolean
-
-    # Optional input for manual override
-    manual_override_duration:
-      name: Duur van Handmatige Inschakeling (in minuten)
-      description: >
-        De tijdsduur dat de lampen handmatig ingeschakeld moeten blijven via de handmatige sensor.
-      default: 30
-      selector:
-        number:
-          min: 1
-          max: 120
-          unit_of_measurement: 'min'
 
 trigger:
   - platform: state
-    entity_id: !input manual_override_sensor
+    entity_id: !input motion_sensor
     to: "on"
 
 condition:
   - condition: and
     conditions:
-      - condition: state
-        entity_id: !input vacation_mode
-        state: "off"
+      - condition: numeric_state
+        entity_id: !input weather_sensor
+        attribute: temperature
+        above: !input min_temp
+      - condition: numeric_state
+        entity_id: !input weather_sensor
+        attribute: temperature
+        below: !input max_temp
+      - condition: numeric_state
+        entity_id: !input weather_sensor
+        attribute: humidity
+        above: !input min_humidity
+      - condition: template
+        value_template: >
+          {% if not is_state('input_boolean.vakantie', 'on') %}
+            {% set temp = state_attr(!input weather_sensor, 'temperature') %}
+            {% set humidity = state_attr(!input weather_sensor, 'humidity') %}
+            {% set precipitation = state_attr(!input weather_sensor, 'precipitation') %}
+            {{ temp > min_temp and temp < max_temp and humidity > min_humidity and precipitation > 0 }}
+          {% else %}
+            false
+          {% endif %}
 
 action:
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input weather_sensor
-            attribute: temperature
-            below: !input min_temp
-          - condition: state
-            entity_id: !input weather_sensor
-            attribute: humidity
-            above: !input min_humidity
+            entity_id: !input manual_override
+            state: "on"
         sequence:
           - service: switch.turn_on
             target: !input insect_lamps
-          - delay: "00:{{ !input insect_lamp_duration | int }}"
+          - delay: !input insect_lamp_duration
           - service: switch.turn_off
             target: !input insect_lamps
-
-    - conditions:
-        - condition: state
-          entity_id: !input manual_override_sensor
-          state: "on"
-      sequence:
-        - service: switch.turn_on
-          target: !input insect_lamps
-        - delay: "00:{{ !input manual_override_duration | int }}"
-        - service: switch.turn_off
-          target: !input insect_lamps
-
-mode: single
+      - conditions:
+          - condition: state
+            entity_id: input_select.seizoensmodus
+            state: "Zomerstand"
+        sequence:
+          - service: switch.turn_on
+            target: !input insect_lamps
+          - delay: "00:30:00"
+          - service: switch.turn_off
+            target: !input insect_lamps
+      - conditions:
+          - condition: state
+            entity_id: input_select.seizoensmodus
+            state: "Winterstand"
+        sequence:
+          - service: switch.turn_on
+            target: !input insect_lamps
+          - delay: "00:05:00"
+          - service: switch.turn_off
+            target: !input insect_lamps
