@@ -1,0 +1,140 @@
+blueprint:
+  name: Insectenlamp Automatisering Versie 2.02
+  description: >
+    Automatische bediening van insectenlampen op basis van temperatuur, luchtvochtigheid, UV-straling, neerslag, en seizoenen.
+    Optimaliseert de tijd en duur waarop de lampen aan staan, en houdt rekening met de activiteit van insecten.
+    Gebruik standaardwaarden of pas ze aan om de configuratie naar wens te tweaken.
+  domain: automation
+  input:
+    # Sectie Insectenlampen
+    insect_lamps:
+      name: Apparaten voor Insectenbestrijding
+      description: >
+        Selecteer de insectenlampen die je wilt aansturen.
+      selector:
+        target:
+          entity:
+            domain:
+              - switch
+              - light
+
+    # Sectie Weersensor
+    weather_sensor:
+      name: Weersensor
+      description: >
+        Selecteer de weersensor voor temperatuur, luchtvochtigheid, en neerslag.
+        Standaard is Buienradar, maar je kunt ook een andere sensor kiezen.
+      selector:
+        entity:
+          domain: weather
+
+    # Sectie Temperatuur en Luchtvochtigheid
+    min_temp:
+      name: Minimale Temperatuur voor Activatie (in °C)
+      description: >
+        Stel de minimumtemperatuur in waarbij insecten actief worden. Standaard is 20°C.
+      default: 20
+      selector:
+        number:
+          min: 10
+          max: 35
+          unit_of_measurement: '°C'
+          mode: slider
+
+    max_temp:
+      name: Maximale Temperatuur voor Activatie (in °C)
+      description: >
+        Stel de maximumtemperatuur in waarbij insecten actief zijn. Standaard is 35°C.
+      default: 35
+      selector:
+        number:
+          min: 20
+          max: 45
+          unit_of_measurement: '°C'
+          mode: slider
+
+    min_humidity:
+      name: Minimale Luchtvochtigheid voor Activatie (in %)
+      description: >
+        Stel de minimum luchtvochtigheid in waarbij insecten actief worden. Standaard is 60%.
+      default: 60
+      selector:
+        number:
+          min: 40
+          max: 100
+          unit_of_measurement: '%'
+          mode: slider
+
+    # Sectie Handmatige Bediening
+    manual_control:
+      name: Handmatige Besturing
+      description: >
+        Optioneel: Voeg een sensor toe waarmee je handmatig de lampen kunt inschakelen voor een bepaalde tijd.
+      selector:
+        entity:
+          domain: input_boolean
+          optional: true
+
+    insect_lamp_duration:
+      name: Duur dat de Lampen Aan Moeten Blijven (in uren)
+      description: >
+        Stel in hoe lang de insectenlampen aan moeten blijven na detectie van insectenactiviteit.
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 24
+          unit_of_measurement: 'uur'
+          mode: slider
+
+    # Sectie Seizoenen en Vakantie
+    season_mode:
+      name: Seizoensmodus
+      description: >
+        Kies de modus voor seizoenen om de activering van de lampen te regelen.
+      selector:
+        select:
+          options:
+            - Zomer
+            - Winter
+            - Herfst
+            - Lente
+
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: >
+        Schakelt de vakantiemodus in of uit via een dashboardknop.
+      selector:
+        entity:
+          domain: input_boolean
+          optional: true
+
+  # Voorwaarden voor de actie
+  condition:
+    - condition: state
+      entity_id: !input vacation_mode
+      state: "off"
+
+  # Acties
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: !input season_mode
+              state: Zomer
+          sequence:
+            - service: light.turn_on
+              target: !input insect_lamps
+            - delay: "{{ !input insect_lamp_duration }}:00:00"
+            - service: light.turn_off
+              target: !input insect_lamps
+        - conditions:
+            - condition: state
+              entity_id: !input season_mode
+              state: Winter
+          sequence:
+            - service: light.turn_on
+              target: !input insect_lamps
+            - delay: "{{ !input insect_lamp_duration }}:00:00"
+            - service: light.turn_off
+              target: !input insect_lamps
