@@ -1,0 +1,140 @@
+blueprint:
+  name: Insectenlamp Automatisering Versie 2.06
+  description: >
+    Automatische bediening van insectenlampen op basis van temperatuur, luchtvochtigheid, regen, en seizoenen.
+    Optimaliseert de tijd en duur waarop de lampen aan staan, en houdt rekening met de activiteit van insecten.
+    Gebruik de configuratie-opties om de automatisering naar wens aan te passen.
+
+  domain: automation
+
+  input:
+    # Sectie Insectenlampen
+    insect_lamps:
+      name: Insectenlampen
+      description: Selecteer de insectenlampen die je wilt aansturen.
+      selector:
+        target:
+          entity:
+            domain: switch
+            device_class: switch
+
+    # Sectie Weersensoren
+    weather_sensor:
+      name: Weersensor
+      description: Selecteer de weersensor die temperatuur, luchtvochtigheid en regen meet.
+      selector:
+        entity:
+          domain: weather
+    
+    # Minimale en maximale temperatuur voor activatie
+    temperature_min:
+      name: Minimale temperatuur
+      description: De minimale temperatuur waarbij de insectenlampen geactiveerd moeten worden.
+      default: 10
+      selector:
+        number:
+          min: -10
+          max: 40
+          unit_of_measurement: "°C"
+    
+    temperature_max:
+      name: Maximale temperatuur
+      description: De maximale temperatuur waarbij de insectenlampen geactiveerd moeten worden.
+      default: 35
+      selector:
+        number:
+          min: -10
+          max: 50
+          unit_of_measurement: "°C"
+    
+    humidity_threshold:
+      name: Luchtvochtigheidsdrempel
+      description: De luchtvochtigheid waarbij de insectenlampen geactiveerd moeten worden (in %).
+      default: 60
+      selector:
+        number:
+          min: 10
+          max: 100
+          unit_of_measurement: "%"
+
+    # Handmatige bediening (optioneel)
+    manual_control:
+      name: Handmatige Controle
+      description: Voeg optioneel een schakelaar toe voor handmatige controle van de lampen.
+      selector:
+        entity:
+          domain: switch
+
+    # Vakantieschakelaar
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: Schakelt de vakantiemodus in of uit via een dashboardknop.
+      selector:
+        entity:
+          domain: input_boolean
+
+    # Seizoensmodus
+    season_mode:
+      name: Seizoensmodus
+      description: Selecteer de seizoensmodus (Zomer of Winter).
+      selector:
+        select:
+          options:
+            - Zomer
+            - Winter
+    
+    # Duur dat de lampen aan moeten blijven
+    insect_lamp_duration:
+      name: Duur van Insectenlampen (in minuten)
+      description: De tijd dat de insectenlampen ingeschakeld moeten blijven na activatie.
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: "minuten"
+
+  # Triggers: handmatige controle of verandering in seizoensmodus
+  trigger:
+    - platform: state
+      entity_id: !input manual_control
+      to: "on"
+    - platform: state
+      entity_id: !input season_mode
+    - platform: state
+      entity_id: !input vacation_mode
+
+  # Voorwaarden voor het uitschakelen van lampen bij vakantie
+  condition:
+    - condition: state
+      entity_id: !input vacation_mode
+      state: "off"
+
+  # Acties gebaseerd op seizoensmodus
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: !input season_mode
+              state: "Zomer"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input insect_lamps
+            - delay: "00:{{ !input insect_lamp_duration }}:00"
+            - service: switch.turn_off
+              target:
+                entity_id: !input insect_lamps
+
+        - conditions:
+            - condition: state
+              entity_id: !input season_mode
+              state: "Winter"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input insect_lamps
+            - delay: "00:{{ !input insect_lamp_duration }}:00"
+            - service: switch.turn_off
+              target:
+                entity_id: !input insect_lamps
