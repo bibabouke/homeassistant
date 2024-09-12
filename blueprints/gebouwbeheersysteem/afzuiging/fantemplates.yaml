@@ -1,0 +1,18 @@
+- platform: template
+  fans:
+    central_ventilation:
+      friendly_name: "Central Ventilation"
+      value_template: "{{ states('light.afzuiginstallatie') }}"
+      percentage_template: "{{ (state_attr('light.afzuiginstallatie','brightness')/255*100) }}"
+      speed_count: 3
+      set_percentage:
+        service: light.turn_on
+        entity_id: light.afzuiginstallatie
+        data_template:
+          brightness_pct: "{{percentage}}"
+      turn_on:
+        service: homeassistant.turn_on
+        entity_id: light.afzuiginstallatie
+      turn_off:
+        service: homeassistant.turn_off
+        entity_id: light.afzuiginstallatie
