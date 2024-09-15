@@ -1,0 +1,160 @@
+# Versie 2.03 - Seizoensschakeling op Datum met foutafhandeling en optionele meldingen
+blueprint:
+  name: Seizoensschakeling op Datum
+  description: >
+    Schakelt automatisch tussen winter-, zomer-, lente- en herfstmodus op basis van de door de gebruiker ingestelde datum.
+    Meldingen kunnen naar geselecteerde gebruikers worden gestuurd wanneer het seizoen verandert.
+  domain: automation
+  input:
+    seizoensmodus:
+      name: Seizoensmodus Helper
+      description: Selecteer de helper die de huidige seizoensmodus opslaat.
+      selector:
+        entity:
+          domain: input_select
+
+    zomer_start:
+      name: Start van de zomer
+      description: >
+        Kies de startdatum van de zomer. Astronomische zomer begint op 21 juni, maar de meteorologische zomer begint op 1 juni.
+      default: "2024-06-21"
+      selector:
+        date:
+
+    herfst_start:
+      name: Start van de herfst
+      description: >
+        Kies de startdatum van de herfst. Astronomische herfst begint op 23 september, terwijl de meteorologische herfst begint op 1 september.
+      default: "2024-09-23"
+      selector:
+        date:
+
+    winter_start:
+      name: Start van de winter
+      description: >
+        Kies de startdatum van de winter. Astronomische winter begint op 21 december, maar de meteorologische winter begint op 1 december.
+      default: "2024-12-21"
+      selector:
+        date:
+
+    lente_start:
+      name: Start van de lente
+      description: >
+        Kies de startdatum van de lente. Astronomische lente begint op 21 maart, terwijl de meteorologische lente begint op 1 maart.
+      default: "2024-03-21"
+      selector:
+        date:
+
+    gebruikers_melding:
+      name: Gebruikers voor Melding
+      description: >
+        Optioneel: Selecteer gebruikers die een melding ontvangen wanneer het seizoen verandert.
+      selector:
+        entity:
+          domain: person
+      default: []
+
+trigger:
+  - platform: time
+    at: "13:00:00"  # Controleert elke dag om 13:00 uur
+
+action:
+  - variables:
+      huidige_datum: "{{ now().date() }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= zomer_start and huidige_datum < herfst_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Zomerstand'
+          - service: logbook.log
+            data:
+              name: "Seizoensschakeling"
+              message: "Seizoen is veranderd naar Zomerstand"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ gebruikers_melding | length > 0 }}"
+                sequence:
+                  - service: notify.notify
+                    data:
+                      title: "Seizoensschakeling"
+                      message: "Seizoen is veranderd naar Zomerstand"
+                      target: !input gebruikers_melding
+
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= herfst_start and huidige_datum < winter_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Herfststand'
+          - service: logbook.log
+            data:
+              name: "Seizoensschakeling"
+              message: "Seizoen is veranderd naar Herfststand"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ gebruikers_melding | length > 0 }}"
+                sequence:
+                  - service: notify.notify
+                    data:
+                      title: "Seizoensschakeling"
+                      message: "Seizoen is veranderd naar Herfststand"
+                      target: !input gebruikers_melding
+
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= winter_start and huidige_datum < lente_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Winterstand'
+          - service: logbook.log
+            data:
+              name: "Seizoensschakeling"
+              message: "Seizoen is veranderd naar Winterstand"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ gebruikers_melding | length > 0 }}"
+                sequence:
+                  - service: notify.notify
+                    data:
+                      title: "Seizoensschakeling"
+                      message: "Seizoen is veranderd naar Winterstand"
+                      target: !input gebruikers_melding
+
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= lente_start and huidige_datum < zomer_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Lentestand'
+          - service: logbook.log
+            data:
+              name: "Seizoensschakeling"
+              message: "Seizoen is veranderd naar Lentestand"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ gebruikers_melding | length > 0 }}"
+                sequence:
+                  - service: notify.notify
+                    data:
+                      title: "Seizoensschakeling"
+                      message: "Seizoen is veranderd naar Lentestand"
+                      target: !input gebruikers_melding
