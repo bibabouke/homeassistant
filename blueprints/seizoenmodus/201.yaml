@@ -1,0 +1,96 @@
+# Versie 2.01 - Seizoensschakeling op basis van datum
+blueprint:
+  name: Seizoensschakeling op Datum
+  description: >
+    Schakelt automatisch tussen zomer-, herfst-, winter- en lentemodus op basis van de door de gebruiker ingestelde datum. 
+    De voorgestelde datums zijn gebaseerd op zowel de astronomische als de meteorologische seizoenen.
+
+  domain: automation
+  input:
+    seizoensmodus:
+      name: Seizoensmodus Helper
+      description: Selecteer de helper die de huidige seizoensmodus opslaat.
+      selector:
+        entity:
+          domain: input_select
+
+    zomer_start:
+      name: Start van de zomer
+      description: >
+        Kies de startdatum van de zomer. Astronomische zomer begint op 21 juni, maar de meteorologische zomer begint op 1 juni.
+      default: "2024-06-21"
+      selector:
+        date:
+
+    herfst_start:
+      name: Start van de herfst
+      description: >
+        Kies de startdatum van de herfst. Astronomische herfst begint op 23 september, terwijl de meteorologische herfst begint op 1 september.
+      default: "2024-09-23"
+      selector:
+        date:
+
+    winter_start:
+      name: Start van de winter
+      description: >
+        Kies de startdatum van de winter. Astronomische winter begint op 21 december, maar de meteorologische winter begint op 1 december.
+      default: "2024-12-21"
+      selector:
+        date:
+
+    lente_start:
+      name: Start van de lente
+      description: >
+        Kies de startdatum van de lente. Astronomische lente begint op 21 maart, terwijl de meteorologische lente begint op 1 maart.
+      default: "2024-03-21"
+      selector:
+        date:
+
+trigger:
+  - platform: time
+    at: "00:00:00"  # Controleert elke dag om middernacht
+
+action:
+  - variables:
+      huidige_datum: "{{ now().date() }}"
+  
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= zomer_start and huidige_datum < herfst_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Zomer'
+
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= herfst_start and huidige_datum < winter_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Herfst'
+
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= winter_start and huidige_datum < lente_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Winter'
+
+      - conditions:
+          - condition: template
+            value_template: "{{ huidige_datum >= lente_start and huidige_datum < zomer_start }}"
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Lente'
