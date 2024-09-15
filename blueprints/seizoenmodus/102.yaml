@@ -1,0 +1,125 @@
+# Versie 1.02 - Seizoensschakeling Blueprint
+blueprint:
+  name: Dynamische Seizoensschakeling
+  description: >
+    Schakelt automatisch tussen zomer-, winter-, lente- en herfstmodus op basis van weerdata zoals temperatuur, luchtvochtigheid, zonnestraling en regenval. 
+    De gebruiker kan de drempelwaarden tweaken via de UI. De seizoensmodus kan ook handmatig worden ingesteld via een helper. Automatisch schakelen vindt plaats rond 1 juni en 1 december.
+  domain: automation
+  input:
+    seizoensmodus:
+      name: Seizoensmodus Helper
+      description: Selecteer de helper die de huidige seizoensmodus opslaat.
+      selector:
+        entity:
+          domain: input_select
+
+    weersensor:
+      name: Weersensor
+      description: Selecteer de weersensor die de gegevens levert voor temperatuur, luchtvochtigheid, regen en zonnestraling.
+      selector:
+        entity:
+          domain: weather
+
+    zomer_drempel_temp:
+      name: Drempel voor Zomerstand (in °C)
+      description: >
+        Stel de temperatuur in boven welke de zomerstand ingeschakeld wordt. In Nederland wordt een gemiddelde temperatuur van 15°C vaak gezien als het begin van de zomerperiode. 
+        Boven deze drempel is het typisch warm genoeg om in de zomerstand te blijven.
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 30
+          unit_of_measurement: '°C'
+
+    winter_drempel_temp:
+      name: Drempel voor Winterstand (in °C)
+      description: >
+        Stel de temperatuur in onder welke de winterstand ingeschakeld wordt. In Nederland ligt de gemiddelde wintertemperatuur rond de 4-6°C. Onder de 10°C wijzen de omstandigheden typisch op winterse omstandigheden.
+      default: 10
+      selector:
+        number:
+          min: -10
+          max: 15
+          unit_of_measurement: '°C'
+
+    min_zonnestraling:
+      name: Minimale Zonnestraling voor Zomerstand (W/m²)
+      description: >
+        Stel de minimum zonnestraling in voor de zomerstand. In de zomer ligt de zonnestraling vaak boven 200 W/m². Dit wordt gebruikt om te bepalen of het warm en zonnig genoeg is om de zomerstand te activeren.
+      default: 200
+      selector:
+        number:
+          min: 50
+          max: 500
+          unit_of_measurement: 'W/m²'
+
+    max_regenval:
+      name: Maximale Regenval voor Zomerstand (mm/h)
+      description: >
+        Stel de maximale regenval in. Bij een regenval van meer dan 0,5 mm/h worden de omstandigheden natter en kouder, typisch voor de overgang naar winter. Het verhogen van deze waarde maakt het systeem minder gevoelig voor lichte regen.
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 10
+          unit_of_measurement: "mm/h"
+
+    min_luchtvochtigheid:
+      name: Minimale Luchtvochtigheid voor Zomerstand (%)
+      description: >
+        Stel de minimale luchtvochtigheid in. In de zomer is de luchtvochtigheid typisch tussen de 60% en 80%. Bij een luchtvochtigheid onder 60% kunnen de omstandigheden droog en ongunstig zijn voor zomerse activiteiten.
+      default: 60
+      selector:
+        number:
+          min: 40
+          max: 100
+          unit_of_measurement: "%"
+
+trigger:
+  - platform: time
+    at: "02:00:00"  # Elke nacht de waarden controleren
+
+  - platform: time
+    at: "01:00:00"  # Controleer alleen rond begin juni en begin december
+    conditions:
+      - condition: time
+        before: "2024-12-21"
+      - condition: time
+        after: "2024-06-21"
+
+action:
+  - variables:
+      avg_temp: "{{ state_attr(weersensor, 'forecast')[0:7] | map(attribute='temperature') | average }}"
+      avg_rain: "{{ state_attr(weersensor, 'forecast')[0:7] | map(attribute='precipitation') | average }}"
+      avg_uv: "{{ state_attr(weersensor, 'forecast')[0:7] | map(attribute='uv_index') | average }}"
+      avg_humidity: "{{ state_attr(weersensor, 'forecast')[0:7] | map(attribute='humidity') | average }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ avg_temp > zomer_drempel_temp and
+                 avg_rain < max_regenval and
+                 avg_uv > min_zonnestraling and
+                 avg_humidity > min_luchtvochtigheid }}
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Zomerstand'
+
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ avg_temp < winter_drempel_temp or
+                 avg_rain >= max_regenval or
+                 avg_uv <= min_zonnestraling or
+                 avg_humidity <= min_luchtvochtigheid }}
+        sequence:
+          - service: input_select.select_option
+            target:
+              entity_id: !input seizoensmodus
+            data:
+              option: 'Winterstand'
