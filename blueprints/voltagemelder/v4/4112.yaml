@@ -1,0 +1,49 @@
+blueprint:
+  name: "High Voltage Notification"
+  description: "Stuur een notificatie wanneer de voltage van een sensor boven een bepaalde waarde komt."
+  domain: automation
+  input:
+    voltage_sensor:
+      name: Voltage Sensor
+      description: "Selecteer de sensor die de voltage meet."
+      selector:
+        entity:
+          domain: sensor
+    voltage_threshold:
+      name: Voltage Drempelwaarde
+      description: "De drempelwaarde waarbij de melding wordt verzonden."
+      default: 230
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: V
+    notify_device:
+      name: Apparaat om te notificeren
+      description: "Selecteer het apparaat dat de notificatie moet ontvangen."
+      selector:
+        device:
+          integration: mobile_app
+    notify_title:
+      name: Titel van de notificatie
+      description: "De titel van de notificatie."
+      default: "⚠️ Hoge Voltage Gedetecteerd!"
+      selector:
+        text
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input voltage_threshold
+
+action:
+  - service: notify.mobile_app
+    target:
+      device_id: !input notify_device
+    data:
+      title: !input notify_title
+      message: >
+        De voltage van {{ state_attr(!input voltage_sensor, 'friendly_name') }} is nu 
+        {{ states(!input voltage_sensor) }} V en heeft de drempel van {{ !input voltage_threshold }} V overschreden.
+
+mode: single
