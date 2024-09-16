@@ -1,0 +1,77 @@
+blueprint:
+  name: "High Voltage Notification"
+  description: "Stuur een notificatie naar een mobiel apparaat wanneer de voltage van een sensor een bepaalde drempelwaarde overschrijdt."
+  domain: automation
+  input:
+    voltage_sensor:
+      name: Voltage Sensor
+      description: "Kies de sensor die de voltage meet."
+      selector:
+        entity:
+          domain: sensor
+    voltage_threshold:
+      name: Voltage Drempelwaarde
+      description: "De drempelwaarde waarbij de melding wordt verzonden."
+      default: 230
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: V
+    notify_device:
+      name: Apparaat om te notificeren
+      description: "Selecteer het apparaat dat de notificatie moet ontvangen."
+      selector:
+        device:
+          integration: mobile_app
+    notify_title:
+      name: Titel van de notificatie
+      description: "De titel van de notificatie."
+      default: "⚠️ Hoge Voltage Gedetecteerd!"
+      selector:
+        text:
+    notify_okay_message:
+      name: Bericht als alles in orde is
+      description: "Bericht dat verstuurd wordt wanneer de voltage binnen de grenzen blijft."
+      default: "De voltage is weer normaal."
+      selector:
+        text
+    status_bar_icon:
+      name: "Status bar icon"
+      description: "Sets the status bar icon (Android only)"
+      default: mdi:home-assistant
+      selector:
+        icon:
+          placeholder: mdi:home-assistant
+
+variables:
+  voltage_sensor: !input voltage_sensor
+  notify_device: !input notify_device
+  notify_title: !input notify_title
+  voltage_threshold: !input voltage_threshold
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input voltage_threshold
+
+action:
+  - choose:
+      - conditions: "{{ notify_device is not none }}"
+        sequence:
+          - service: 'notify.mobile_app_{{ device_attr(notify_device, "name") | slugify }}'
+            data:
+              title: "{{ notify_title }}"
+              message: >
+                De voltage van {{ state_attr(voltage_sensor, 'friendly_name') }} is nu 
+                {{ states(voltage_sensor) }} V en heeft de drempel van {{ voltage_threshold }} V overschreden.
+              data:
+                ttl: 0
+                priority: high
+                notification_icon: !input 'status_bar_icon'
+                tag: "voltage_alert"
+  - choose:
+      - conditions: "{{ custom_action is defined }}"
+        sequence: !input 'custom_action'
+
+mode: single
