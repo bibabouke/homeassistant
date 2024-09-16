@@ -1,0 +1,55 @@
+blueprint:
+  name: Voltage Notification
+  description: Stuur een notificatie naar een apparaat wanneer de spanning van een sensor boven een bepaalde waarde komt.
+  domain: automation
+  input:
+    voltage_sensor:
+      name: Voltage Sensor
+      description: Kies de sensor die de spanning meet.
+      selector:
+        entity:
+          domain: sensor
+          device_class: voltage
+    voltage_threshold:
+      name: Spanningsdrempel
+      description: De waarde waarbij de notificatie wordt verzonden.
+      default: 230
+      selector:
+        number:
+          min: 0
+          max: 400
+          unit_of_measurement: V
+    notify_device:
+      name: Apparaten om notificaties te ontvangen
+      description: Kies een apparaat dat notificaties ontvangt. Het apparaat moet verbonden zijn met de Home Assistant mobiele app.
+      selector:
+        device:
+          filter:
+            integration: mobile_app
+    notification_message:
+      name: Notificatiebericht
+      description: Het bericht dat naar het apparaat wordt gestuurd wanneer de drempel is overschreden. Je kunt de waarde van de spanning toevoegen met `{{ states('sensor.voltage_sensor') }} V`.
+      default: "De spanning is te hoog!"
+      selector:
+        text:
+          multiline: true
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input voltage_threshold
+
+variables:
+  voltage_value: "{{ states(!input voltage_sensor) }}"
+
+action:
+  - alias: "Stuur notificatie naar apparaat"
+    domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    message: >
+      {{ !input notification_message }} 
+      Huidige spanning: {{ voltage_value }} V
+    title: "Spanningsalarm"
+
+mode: single
