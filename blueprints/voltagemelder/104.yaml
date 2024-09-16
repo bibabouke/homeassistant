@@ -1,0 +1,64 @@
+blueprint:
+  name: "Voltage Monitoring en Melding"
+  description: >
+    Monitoren van spanning en versturen van meldingen bij overschrijding van een ingestelde grens.
+    Bij overschrijding van de drempel wordt een melding verstuurd naar een specifieke gebruiker via de Home Assistant app en wordt
+    een log bijgehouden van het maximaal bereikte voltage.
+
+    Versie: 1.03
+    Update log:
+      - Correctie voor het selecteren van gebruikers: notify service gebruikt in plaats van target selector.
+      - Verbeterde logica voor notificatie en logboek.
+      - Versienummer bijgewerkt naar 1.03.
+
+  domain: automation
+
+  input:
+    voltage_sensors:
+      name: Spanning sensoren
+      description: Kies de spanning sensoren die gemonitord moeten worden.
+      selector:
+        entity:
+          domain: sensor
+          device_class: voltage
+          multiple: true
+
+    threshold:
+      name: Spanning drempel
+      description: >
+        Stel de drempelwaarde in waarbij een melding wordt verstuurd. Standaard ingesteld op 245 volt.
+        Zodra de netspanning bij u boven 253 Volt komt, schakelt de omvormer uit veiligheid af. Met als 
+        gevolg dat er ook geen stroom meer opgewekt kan worden. Dit is wettelijk geregeld en staat beschreven 
+        in de normen waar een omvormer aan moet voldoen.
+      default: 245
+      selector:
+        number:
+          min: 220
+          max: 253
+          unit_of_measurement: V
+          step: 1
+
+    notify_service:
+      name: Notificatie service
+      description: Kies de notify service voor meldingen (bijv. notify.mobile_app_<je_telefoon>).
+      selector:
+        entity:
+          domain: notify
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensors
+    above: !input threshold
+
+action:
+  - service: !input notify_service
+    data:
+      message: >
+        {{ trigger.to_state.name }} heeft de spanningsgrens van {{ states(trigger.entity_id).state }} volt overschreden. 
+        Let op, de zonnepanelen kunnen minder opwekken als er niet wat verandert.
+
+  - service: logbook.log
+    data:
+      name: "Spanning overschrijding"
+      message: >
+        {{ trigger.to_state.name }} heeft een spanning van {{ states(trigger.entity_id).state }} volt bereikt op {{ now().timestamp() }}.
