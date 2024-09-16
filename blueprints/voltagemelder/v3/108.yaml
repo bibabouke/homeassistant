@@ -1,0 +1,42 @@
+blueprint:
+  name: Voltage Notification
+  description: Send a notification when the voltage from the P1 sensor exceeds a threshold.
+  domain: automation
+  input:
+    voltage_sensor:
+      name: Voltage Sensor
+      description: The sensor that monitors voltage.
+      selector:
+        entity:
+          domain: sensor
+          device_class: voltage
+    voltage_threshold:
+      name: Voltage Threshold
+      description: Voltage value above which a notification is sent.
+      default: 230
+      selector:
+        number:
+          min: 0
+          max: 400
+          unit_of_measurement: V
+    notify_device:
+      name: Device to notify
+      description: Device needs to run the official Home Assistant app to receive notifications.
+      selector:
+        device:
+          filter:
+            integration: mobile_app
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input voltage_threshold
+
+action:
+  - service: notify.mobile_app
+    target:
+      device_id: !input notify_device
+    data:
+      message: >
+        De spanning is te hoog! Huidige spanning: {{ states( !input 'voltage_sensor' ) }} V.
+      title: "Spanningsalarm"
