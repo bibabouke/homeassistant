@@ -1,0 +1,38 @@
+blueprint:
+  name: Voltage Monitoring Notification
+  description: "Stuur een melding naar je telefoon wanneer de spanning op fase 1 boven 231.0 V komt."
+  domain: automation
+  input:
+    voltage_sensor:
+      name: Voltage Sensor
+      description: "Kies de voltage sensor die je wilt monitoren"
+      selector:
+        entity:
+          domain: sensor
+    phone:
+      name: Telefoon voor notificatie
+      description: "Kies het apparaat waarop de melding moet worden gestuurd"
+      selector:
+        device:
+          integration: mobile_app
+    voltage_threshold:
+      name: Voltage Threshold
+      description: "Drempelwaarde voor voltage"
+      default: 231.0
+      selector:
+        number:
+          min: 0
+          max: 250
+          step: 0.1
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensor
+    above: !input voltage_threshold
+
+action:
+  - service: notify.mobile_app_!input phone
+    data:
+      message: "De spanning op fase 1 is boven de {{ !input voltage_threshold }} V gestegen. Huidige spanning: {{ states(!input voltage_sensor) }} V"
+
+mode: single
