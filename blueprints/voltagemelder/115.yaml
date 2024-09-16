@@ -1,0 +1,50 @@
+blueprint:
+  name: "Eenvoudige Voltage Melding"
+  description: >
+    Stuur een melding naar de Home Assistant mobiele app wanneer de spanning hoger is dan de ingestelde waarde.
+
+    Versie: 1.15
+
+  domain: automation
+
+  input:
+    voltage_sensors:
+      name: Spanning sensoren
+      description: Kies de spanning sensoren die gemonitord moeten worden.
+      selector:
+        entity:
+          domain: sensor
+          device_class: voltage
+          multiple: true
+
+    threshold:
+      name: Spanning drempel
+      description: >
+        Stel de drempelwaarde in waarbij een melding wordt verstuurd. Standaard ingesteld op 245 volt.
+      default: 245
+      selector:
+        number:
+          min: 220
+          max: 253
+          unit_of_measurement: V
+          step: 1
+
+    notify_device:
+      name: Apparaat om notificatie naar te sturen
+      description: Het apparaat moet de Home Assistant mobiele app hebben geïnstalleerd.
+      selector:
+        device:
+          integration: mobile_app
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input voltage_sensors
+    above: !input threshold
+
+action:
+  - service: notify.mobile_app
+    data:
+      message: >
+        De spanningsdrempel is overschreden. De huidige waarde is {{ states(!input voltage_sensors) }} volt.
+    target:
+      device_id: !input notify_device
