@@ -1,0 +1,173 @@
+blueprint:
+  name: Insectenlamp Automatisering v3.20
+  description: >
+    Automatische bediening van insectenlampen op basis van weer, seizoenen en handmatige bediening.
+    De automatisering wordt elke 2 uur na middernacht gesynchroniseerd en controleert de weersomstandigheden voordat de lampen worden ingeschakeld.
+
+  domain: automation
+  input:
+    insectenlampen:
+      name: Insectenlampen
+      description: Selecteer de insectenlampen die je wilt aansturen (zowel switches als lights).
+      selector:
+        target:
+          entity:
+            domain:
+              - switch
+              - light
+
+    weersensor:
+      name: Weersensor
+      description: Selecteer de weersensor die temperatuur, luchtvochtigheid en regen meet.
+      selector:
+        entity:
+          domain: weather
+
+    min_temp:
+      name: Minimale Temperatuur
+      description: Stel de minimumtemperatuur in waarbij de insectenlampen nog geactiveerd worden.
+      default: 10
+      selector:
+        number:
+          min: -20
+          max: 40
+          unit_of_measurement: '°C'
+    
+    max_temp:
+      name: Maximale Temperatuur
+      description: Stel de maximumtemperatuur in waarbij de insectenlampen nog geactiveerd worden.
+      default: 35
+      selector:
+        number:
+          min: -20
+          max: 50
+          unit_of_measurement: '°C'
+
+    min_humidity:
+      name: Minimale Luchtvochtigheid
+      description: Stel de minimum luchtvochtigheid in waarbij de insectenlampen nog geactiveerd worden.
+      default: 60
+      selector:
+        number:
+          min: 40
+          max: 100
+          unit_of_measurement: "%"
+
+    max_rain:
+      name: Maximale Regenintensiteit
+      description: Stel de maximale regenintensiteit in waarbij de lampen nog worden ingeschakeld.
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 10
+          unit_of_measurement: "mm/h"
+
+    vacation_mode:
+      name: Vakantieschakelaar
+      description: >
+        Schakel de vakantiemodus in. Als deze modus is ingeschakeld, blijven de insectenlampen uit.
+      selector:
+        entity:
+          domain: input_boolean
+
+    seizoensmodus:
+      name: Seizoensmodus
+      description: Selecteer de seizoensmodus (Zomerstand, Winterstand, Herfststand, Lentestand).
+      selector:
+        entity:
+          domain: input_select
+
+trigger:
+  # Synchronisatie om middernacht
+  - platform: time
+    at: "00:00:00"
+
+  # Elke 2 uur na middernacht
+  - platform: time_pattern
+    hours: "/2"
+    minutes: 0
+
+condition:
+  # Controleer of de temperatuur binnen het gewenste bereik ligt
+  - condition: numeric_state
+    entity_id: !input 'weersensor'
+    attribute: temperature
+    above: !input 'min_temp'
+    below: !input 'max_temp'
+
+  # Controleer de luchtvochtigheid
+  - condition: numeric_state
+    entity_id: !input 'weersensor'
+    attribute: humidity
+    above: !input 'min_humidity'
+
+  # Controleer of het niet te hard regent
+  - condition: numeric_state
+    entity_id: !input 'weersensor'
+    attribute: precipitation
+    below: !input 'max_rain'
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ states( 'input_select.seizoensmodus' ) == 'Zomerstand' }}"
+        sequence:
+          - service: switch.turn_on
+            target: !input 'insectenlampen'
+          - delay:
+              minutes: 15
+          - repeat:
+              count: 4
+              sequence:
+                - delay: "00:30:00"
+                - service: switch.turn_on
+                  target: !input 'insectenlampen'
+
+      - conditions:
+          - condition: template
+            value_template: "{{ states( 'input_select.seizoensmodus' ) == 'Winterstand' }}"
+        sequence:
+          - service: switch.turn_on
+            target: !input 'insectenlampen'
+          - delay:
+              minutes: 10
+          - repeat:
+              count: 2
+              sequence:
+                - delay: "01:00:00"
+                - service: switch.turn_on
+                  target: !input 'insectenlampen'
+
+      - conditions:
+          - condition: template
+            value_template: "{{ states( 'input_select.seizoensmodus' ) == 'Herfststand' }}"
+        sequence:
+          - service: switch.turn_on
+            target: !input 'insectenlampen'
+          - delay:
+              minutes: 12
+          - repeat:
+              count: 3
+              sequence:
+                - delay: "00:45:00"
+                - service: switch.turn_on
+                  target: !input 'insectenlampen'
+
+      - conditions:
+          - condition: template
+            value_template: "{{ states( 'input_select.seizoensmodus' ) == 'Lentestand' }}"
+        sequence:
+          - service: switch.turn_on
+            target: !input 'insectenlampen'
+          - delay:
+              minutes: 12
+          - repeat:
+              count: 3
+              sequence:
+                - delay: "00:45:00"
+                - service: switch.turn_on
+                  target: !input 'insectenlampen'
+
+mode: single
