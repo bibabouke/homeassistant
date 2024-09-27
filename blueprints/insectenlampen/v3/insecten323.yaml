@@ -26,22 +26,22 @@ blueprint:
 
     min_temp:
       name: Minimale Temperatuur
-      description: Muggen zijn vooral actief bij temperaturen boven 10°C. Stel hier de minimale temperatuur in voor de activering van de insectenlampen.
-      default: 10
+      description: Muggen zijn vooral actief bij temperaturen boven 10°C. Stel hier de minimale buitentemperatuur in voor de activering van de insectenlampen.
+      default: 12
       selector:
         number:
-          min: -20
-          max: 40
+          min: 0
+          max: 25
           unit_of_measurement: '°C'
 
     max_temp:
       name: Maximale Temperatuur
-      description: Muggen zijn minder actief bij temperaturen boven 35°C. Stel hier de maximale temperatuur in voor de activering van de insectenlampen.
+      description: Muggen zijn minder actief bij temperaturen boven 35°C. Stel hier de maximale buitentemperatuur in voor de activering van de insectenlampen.
       default: 35
       selector:
         number:
-          min: -20
-          max: 50
+          min: 25
+          max: 40
           unit_of_measurement: '°C'
 
     min_humidity:
@@ -50,8 +50,8 @@ blueprint:
       default: 60
       selector:
         number:
-          min: 40
-          max: 100
+          min: 50
+          max: 70
           unit_of_measurement: "%"
 
     max_rain:
