@@ -3,53 +3,53 @@ blueprint:
   author: panhans
   homeassistant:
     min_version: "2024.8.0"
-  description: "
+  beschrijving: "
 
 
 
-    🔥 heating / ❄ based on
+    🔥 verwarming / ❄ op basis van
 
 
-    > 👥 people presence
+    > 👥 aanwezigheid van mensen
 
-    🗓️ multiple schedulers
+    🗓️ meerdere planningen
 
-    🚶 presence sensor
+    🚶 aanwezigheidssensor
 
-    ↔️ proximity aka geo fencing
-
-
-    🥶 frost protection
-
-    😡 adjustable aggressive mode
-
-    🌤️ activation based on weather, temperature or boolean entities
-
-    🎛️ granular schedule adjustments
-
-    🪟 multiple window open detection
-
-    🎈 party mode
-
-    🤝 guest mode
-
-    ⚔️ liming protection
-
-    🧭 thermostat calibration for the most common devices (Tado, Aqara, Popp / Danfoss / Hive, Tuya)
-
-    ⚙️ several tweaks for fixing your thermostat issues
-
-    🎬 custom action
-
-    🤫 calm & 💪 reliable
+    ↔️ nabijheid, ook wel geo-afbakening
 
 
+    🥶 vorstbescherming
 
-    **Version**: 4.3.1
+    😡 aanpasbare agressieve modus
 
-    **Help & FAQ**: [Advanced Heating Control](https://community.home-assistant.io/t/advanced-heating-control/469873)
+    🌤️ activatie op basis van weer, temperatuur of booleaanse entiteiten
 
-    **Documentation:** work in progress
+    🎛️ gedetailleerde aanpassingen van het schema
+
+    🪟 detectie van meerdere geopende ramen
+
+    🎈 feestmodus
+
+    🤝 gastmodus
+
+    ⚔️ kalkbescherming
+
+    🧭 thermostaatkalibratie voor de meest voorkomende apparaten (Tado, Aqara, Popp / Danfoss / Hive, Tuya)
+
+    ⚙️ verschillende aanpassingen voor het oplossen van thermostaatproblemen
+
+    🎬 aangepaste actie
+
+    🤫 kalm & 💪 betrouwbaar
+
+
+
+    **Versie**: 4.3.1
+
+    **Hulp & FAQ**: [Advanced Heating Control](https://community.home-assistant.io/t/advanced-heating-control/469873)
+
+    **Documentatie:** work in progress
 
 
     [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q3QEH52)
@@ -64,7 +64,7 @@ blueprint:
       input:
         input_trvs:
           name: 🔥 Thermostaten / Climates
-          description: >
+          beschrijving: >
             `thermostats` `climates` 
 
 
@@ -78,12 +78,12 @@ blueprint:
 
         input_hvac_mode:
           name: 🎛️ Operation / HVAC Mode
-          description: >
+          beschrijving: >
             `hvac`
 
 
-            Selecteer de HVAC-modus for your [thermostats](https://www.home-assistant.io/integrations/climate/). Be sure your selected thermostats support the hvac mode you've chosen.
-            AHC will log a warning if there is a miss match. For radiator [thermostats]((https://www.home-assistant.io/integrations/climate/)) the default is mostly *heat*.
+            Select the hvac mode for your [thermostats](https://www.home-assistant.io/integrations/climate/). Zorg ervoor dat je geselecteerde thermostaten de gekozen HVAC-modus ondersteunen.
+            AHC zal een waarschuwing loggen als er een mismatch is. For radiator [thermostats]((https://www.home-assistant.io/integrations/climate/)) the default is mostly *heat*.
             If you own an air conditioner it will support *auto* or *cool*, too.
           default: "heat"
           selector:
@@ -100,12 +100,12 @@ blueprint:
       collapsed: true
       input:
         input_temperature_minimum_static:
-          name: 🌱 Statische Eco Temperatuur
-          description: >
+          name: 🌱 Static Eco Temperature
+          beschrijving: >
             `eco temperature`
 
 
-            De temperatuur die wordt ingesteld wanneer je verwarmingsschema niet actief is.
+            The temperature that is set when your heating schedule is not active.
           default: 19
           selector:
             number:
@@ -116,9 +116,9 @@ blueprint:
               unit_of_measurement: °C / °F
 
         input_temperature_minimum:
-          name: 🌱 Eco Temperatuur
-          description: >
-            `eco temperature` `optional`
+          name: 🌱 Eco Temperature
+          beschrijving: >
+            `eco temperatuur` `optioneel`
 
 
             To control your eco temperature via automations or the UI, you can specify an *[input_number](https://www.home-assistant.io/integrations/input_number/)* entity here.
@@ -135,12 +135,12 @@ blueprint:
 
         # C O M F O R T   &   M O D S
         input_temperature_comfort_static:
-          name: 🛋️ Static Comfort Temperatuur
-          description: >
-            `comfort temperature`
+          name: 🛋️ Static Comfort Temperature
+          beschrijving: >
+            `comforttemperatuur`
 
 
-            You can set a static comfort temperature here.
+            Je kunt hier een statische comforttemperatuur instellen.
           default: 22
           selector:
             number:
@@ -151,9 +151,9 @@ blueprint:
               unit_of_measurement: °C / °F
 
         input_temperature_comfort:
-          name: 🛋️ Comfort Temperatuur
-          description: >
-            `comfort temperature` `optional`
+          name: 🛋️ Comfort Temperature
+          beschrijving: >
+            `comforttemperatuur` `optional`
 
 
             To control your comfort temperature via automations or the UI, you can specify an *[input_number](https://www.home-assistant.io/integrations/input_number/)* entity here.
@@ -176,7 +176,7 @@ blueprint:
       input:
         input_persons:
           name: 👥 Mensen
-          description: >
+          beschrijving: >
             `people` `optional`
 
 
@@ -191,8 +191,8 @@ blueprint:
               multiple: true
 
         input_people_entering_home_duration:
-          name: 🏠 Binnenkomstduur
-          description: >
+          name: 🏠 Enter Home Duration
+          beschrijving: >
             `people`
 
 
@@ -205,8 +205,8 @@ blueprint:
             duration:
 
         input_people_leaving_home_duration:
-          name: 💨 Vertrekduur
-          description: >
+          name: 💨 Leaving Home Duration
+          beschrijving: >
             `people`
 
 
@@ -225,8 +225,8 @@ blueprint:
       collapsed: true
       input:
         input_schedulers:
-          name: ⏲️ Planner
-          description: >
+          name: ⏲️ Scheduler
+          beschrijving: >
             `scheduler` `optional`
 
 
@@ -245,8 +245,8 @@ blueprint:
               multiple: true
 
         input_scheduler_selector:
-          name: ☝🏻 Planner Selector
-          description: >
+          name: ☝🏻 Scheduler Selector
+          beschrijving: >
             `scheduler` `optional`
 
 
@@ -285,7 +285,7 @@ blueprint:
 
         input_time_based_temperature_change_valve_target:
           name: 🎛️ Heating Schedule Adjustments
-          description: >
+          beschrijving: >
             `optional`
 
 
@@ -369,11 +369,11 @@ blueprint:
       input:
         input_presence_sensor:
           name: 🚶 Aanwezigheidssensor / On/Off-Entity
-          description: >
+          beschrijving: >
             `presence detection` `optional`
 
 
-            Als je een aanwezigheidssensor specificeert, zal de verwarming plaatsvinden wanneer aanwezigheid wordt gedetecteerd.<br/>
+            If you specify a presence sensor, heating will take place if it detects presence.<br/>
             If you have specified [people](https://www.home-assistant.io/integrations/person/), at least one must also be at home. You also can select an [Input Boolean](https://www.home-assistant.io/integrations/input_boolean/) entity to realise a simple On/Off-Logic.
           default:
           selector:
@@ -385,8 +385,8 @@ blueprint:
               multiple: false
 
         input_scheduler_presence:
-          name: ⏲️ Aanwezigheidssensor Planner
-          description: >
+          name: ⏲️ Aanwezigheidssensor Scheduler
+          beschrijving: >
             `presence detection` `optional`
 
 
@@ -400,8 +400,8 @@ blueprint:
               multiple: false
 
         input_presence_reaction_on_time:
-          name: ⏳ Reactietijd Aanwezigheid AAN
-          description: >
+          name: ⏳ Presence Reaction On Time
+          beschrijving: >
             `presence detection`
 
 
@@ -414,8 +414,8 @@ blueprint:
             duration:
 
         input_presence_reaction_off_time:
-          name: ⌛ Reactietijd Aanwezigheid UIT
-          description: >
+          name: ⌛ Presence Reaction Off Time
+          beschrijving: >
             `presence detection`
 
 
@@ -436,7 +436,7 @@ blueprint:
         # AWAY OFFSET
         input_away_offset:
           name: 🏃 Away Temperature Offset
-          description: >
+          beschrijving: >
             `scheduler` `persons` `presence` `away mode`
 
 
@@ -455,16 +455,16 @@ blueprint:
 
         input_away_options:
           name: ⚙️ Afwezigheidsmodus
-          description: "
+          beschrijving: "
             `scheduler` `persons` `presence` `away mode`
 
-            > ### ⏲️ Planner Afwezigheidsmodus
+            > ### ⏲️ Scheduler Afwezigheidsmodus
 
             > Enable/Disable the Away Offset for [scheduled](https://www.home-assistant.io/integrations/schedule/) based heating/cooling
 
             > ### 🚶 Presence Afwezigheidsmodus
 
-            > Schakel de Afwezigheidscompensatie in/uit voor aanwezigheid-gebaseerde verwarming/koeling
+            > Enable/Disable the Away Offset for presence based heating/cooling
 
             "
 
@@ -472,7 +472,7 @@ blueprint:
           selector:
             select:
               options:
-                - label: "⏲️ Planner Afwezigheidsmodus"
+                - label: "⏲️ Scheduler Afwezigheidsmodus"
                   value: scheduler
                 - label: "🚶 Presence Afwezigheidsmodus"
                   value: presence
@@ -484,13 +484,13 @@ blueprint:
 
     # P R O X I M I T Y
     proximity_section:
-      name: Nabijheid
+      name: Proximity
       icon: mdi:leak
       collapsed: true
       input:
         input_proximity:
-          name: ↔️ Nabijheid
-          description: >
+          name: ↔️ Proximity
+          beschrijving: >
             `proximity` `optional`
 
 
@@ -507,8 +507,8 @@ blueprint:
               multiple: false
 
         input_proximity_duration:
-          name: ⏰ Nabijheid Duration
-          description: >
+          name: ⏰ Proximity Duration
+          beschrijving: >
             `proximity`
 
 
@@ -521,8 +521,8 @@ blueprint:
             duration:
 
         input_proximity_distance:
-          name: ↔️ Nabijheid Distance
-          description: >
+          name: ↔️ Proximity Distance
+          beschrijving: >
             `proximity`
 
 
@@ -543,7 +543,7 @@ blueprint:
       input:
         input_windows:
           name: 🪟 Windows & Doors
-          description: >
+          beschrijving: >
             `airing` `optional`
 
 
@@ -558,7 +558,7 @@ blueprint:
 
         input_windows_reaction_time_open:
           name: ⏳ Window & Door Reaction Time Open
-          description: >
+          beschrijving: >
             `airing`
 
 
@@ -572,7 +572,7 @@ blueprint:
 
         input_windows_reaction_time_close:
           name: ⌛ Window & Door Reaction Time Close
-          description: >
+          beschrijving: >
             `airing`  
 
 
@@ -586,7 +586,7 @@ blueprint:
 
         input_window_open_temperature:
           name: Window Open Temperature
-          description: ''
+          beschrijving: ''
           default: 0
           selector:
             number:
@@ -598,13 +598,13 @@ blueprint:
 
     # C A L I B R A T I O N
     calibration_section:
-      name: Kalibratie
+      name: Calibration
       icon: mdi:compass
       collapsed: true
       input:
         input_temperature_sensor:
-          name: 🌡️ Kalibratie Temperature Sensor
-          description: >
+          name: 🌡️ Calibration Temperature Sensor
+          beschrijving: >
             `calibration` `optional`
 
 
@@ -625,8 +625,8 @@ blueprint:
               multiple: false
 
         input_calibration_timeout:
-          name: ⏳ Kalibratie Timeout
-          description: >
+          name: ⏳ Calibration Timeout
+          beschrijving: >
             `calibration`
 
 
@@ -642,8 +642,8 @@ blueprint:
             duration:
 
         input_calibration_delta:
-          name: ↔️ Kalibratie Delta
-          description: >
+          name: ↔️ Calibration Delta
+          beschrijving: >
             `calibration`
 
 
@@ -659,11 +659,11 @@ blueprint:
               unit_of_measurement: °C / °F
 
         input_calibration_options:
-          name: ⚙️ Kalibratie Aanpassingen
-          description: "
+          name: ⚙️ Calibration Aanpassingen
+          beschrijving: "
             `calibration`
 
-            > ### 🧭 Generic Kalibratie
+            > ### 🧭 Generic Calibration
 
             > Adds the difference between room and [thermostat](https://www.home-assistant.io/integrations/climate/) temperature to the target temperature.
 
@@ -677,7 +677,7 @@ blueprint:
           selector:
             select:
               options:
-                - label: "🧭 Generic Kalibratie"
+                - label: "🧭 Generic Calibration"
                   value: generic_calibration
                 - label: "🌕 Fully Rounded Values"
                   value: rounded_values
@@ -687,13 +687,13 @@ blueprint:
 
     # M O D I F I E R S
     aggressive_mode_section:
-      name: Agressieve Modus
+      name: Aggressive Mode
       icon: mdi:emoticon-angry
       collapsed: true
       input:
         input_aggressive_mode_range:
-          name: 😡 Agressieve Modus - Range
-          description: >
+          name: 😡 Aggressive Mode - Range
+          beschrijving: >
             `aggressive mode` `tweak`
 
 
@@ -706,7 +706,7 @@ blueprint:
 
             E.g. you target temperature is 20°C and your room temperature is 19.5°C.
             If your range is set to 0.5°C the real target temperature (20°C) will be set when room temperature is between 19.5°C and 20.5°C.
-            If the room temperature is above or lower than range, it gets some offset in order to force your [thermostat](https://www.home-assistant.io/integrations/climate/) to react. (see Agressieve Modus - Offset)
+            If the room temperature is above or lower than range, it gets some offset in order to force your [thermostat](https://www.home-assistant.io/integrations/climate/) to react. (see Aggressive Mode - Offset)
 
             </details>
 
@@ -720,8 +720,8 @@ blueprint:
               unit_of_measurement: °C / °F
 
         input_aggressive_mode_offset:
-          name: 😡 Agressieve Modus - Offset
-          description: >
+          name: 😡 Aggressive Mode - Offset
+          beschrijving: >
             `aggressive mode` `tweak`
 
 
@@ -744,11 +744,11 @@ blueprint:
       input:
         input_frost_protection_temp:
           name: ❄️ Vorstbescherming Temperature
-          description: >
+          beschrijving: >
             `frost protection`
 
 
-            Je kunt hier de vorstbeschermingstemperatuur instellen.
+            You can set the frost protection temperature here.
           default: 5
           selector:
             number:
@@ -760,7 +760,7 @@ blueprint:
 
         input_frost_protection_duration:
           name: ❄️ Vorstbescherming Fallback Duration
-          description: >
+          beschrijving: >
             `frost protection`
 
 
@@ -777,19 +777,19 @@ blueprint:
 
     # LIMING PROTECTION
     liming_protection_section:
-      name: Kalkbescherming
+      name: Liming Protection
       icon: mdi:pipe-valve
       collapsed: true
       input:
         input_liming_protection:
-          name: 🎚️ Kalkbescherming
-          description: >
+          name: 🎚️ Liming Protection
+          beschrijving: >
             `liming protection`
           
 
             Most smart thermostats come with that feature out of the box. 
             If your thermostat doesn't support this or you're using the generic thermostat integration this feature is maybe handy for you in order to prevent your valve against limescale. 
-            De automatisering zet de thermostaat op maximaal en opent de klep gedurende één minuut.
+            The automation will set the thermostat to its max and open the valve for one minute.
 
           default: off
           selector:
@@ -797,7 +797,7 @@ blueprint:
 
         input_liming_protection_day:
           name: 🗓️ Day
-          description: >
+          beschrijving: >
             `liming protection`
           
 
@@ -823,7 +823,7 @@ blueprint:
 
         input_liming_protection_time:
           name: 🕖 Time
-          description: >
+          beschrijving: >
             `liming protection`
 
 
@@ -839,12 +839,12 @@ blueprint:
       collapsed: true
       input:
         input_mode_party:
-          name: 🎈 Feestmodus
-          description: >
+          name: 🎈 Party mode
+          beschrijving: >
             `optional`
 
 
-            Als deze aan staat, worden alle instellingen genegeerd en vindt verwarming plaats. You can define multiple [timers](https://www.home-assistant.io/integrations/timer/) or boolean entities.
+            If on, all settings are ignored and heating takes place. You can define multiple [timers](https://www.home-assistant.io/integrations/timer/) or boolean entities.
             If you put a number at the end of the friendly name like *Party Timer 20* this number will be taken as the desired comfort temperature for this [timer](https://www.home-assistant.io/integrations/timer/).
 
 
@@ -860,8 +860,8 @@ blueprint:
               multiple: true
 
         input_mode_guest:
-          name: 🤝 Gastmodus
-          description: >
+          name: 🤝 Guest mode
+          beschrijving: >
             `optional`
 
 
@@ -886,7 +886,7 @@ blueprint:
 
         input_force_max_temperature:
           name: 🥵 Force Max Temperature
-          description: >
+          beschrijving: >
             `optional`
 
 
@@ -904,13 +904,13 @@ blueprint:
 
     # W I N T E R  M O D E
     toggle_section:
-      name: "Automatiseringsopties Aan/Uit"
+      name: "On/Off Automation Options"
       icon: mdi:light-switch
       collapsed: true
       input:
         input_mode_winter:
-          name: ⛄ Wintermodus / Automation Toggle
-          description: >
+          name: ⛄ Winter Mode / Automation Toggle
+          beschrijving: >
             `activation` `optional`
 
 
@@ -932,8 +932,8 @@ blueprint:
               multiple: false
 
         input_invert_winter_mode_value:
-          name: 🔄 Invert Wintermodus Value
-          description: >
+          name: 🔄 Invert Winter Mode Value
+          beschrijving: >
             `activation`
 
 
@@ -947,11 +947,11 @@ blueprint:
 
         input_mode_outside_temperature:
           name: 🌤️ Outside Temperature Sensor
-          description: >
+          beschrijving: >
             `activation` `optional`
 
 
-            Je kunt het in- en uitschakelen van je thermostaten regelen via de buitentemperatuur. 
+            You can control the switching on and off of your thermostats via the outside temperature. 
             To do this, select a temperature sensor or a weather entity and adjust the threshold below.
 
               * [weather entity](https://www.home-assistant.io/integrations/weather/)
@@ -970,7 +970,7 @@ blueprint:
 
         input_mode_outside_temperature_threshold:
           name: 🎚️ Outside Temperature Threshold
-          description: >
+          beschrijving: >
             `activation`
 
 
@@ -992,8 +992,8 @@ blueprint:
       collapsed: true
       input:
         input_action_call_delay:
-          name: ⚙️ Vertraging Actieaanroep
-          description: >
+          name: ⚙️ Action Call Delay
+          beschrijving: >
             `tweak`
 
 
@@ -1008,7 +1008,7 @@ blueprint:
 
         input_tweaks:
           name: ⚙️ Aanpassingen
-          description: "
+          beschrijving: "
             `tweak`
 
 
@@ -1016,7 +1016,7 @@ blueprint:
 
             > Reset your temperature entities to the values of the static temperatures after [schedule](https://www.home-assistant.io/integrations/schedule/) or [presence](https://www.home-assistant.io/integrations/schedule) ends
 
-            > ### 🛑 Turn *OFF* Instead Of Eco Temperatuur
+            > ### 🛑 Turn *OFF* Instead Of Eco Temperature
 
             > Turn off your [thermostats](https://www.home-assistant.io/integrations/climate/) instead of lower the temperature to eco temperature
 
@@ -1061,7 +1061,7 @@ blueprint:
         # C U S T O M   A C T I O N
         input_custom_action:
           name: 🎬 Aangepaste Actie
-          description: >
+          beschrijving: >
             `optional`
 
 
@@ -1073,7 +1073,7 @@ blueprint:
 
         input_log_level:
           name: ✍️ Logniveau
-          description: ""
+          beschrijving: ""
           default: warning
           selector:
             select:
@@ -1087,7 +1087,7 @@ blueprint:
     # E X P E R I M E N T A L
     # input_tweaks_experimental:
     #   name: 🧪 Experimental Aanpassingen
-    #   description: "
+    #   beschrijving: "
     #     `tweak`
 
     #     > ### 🌡️ Physical Temperature Change
@@ -1853,14 +1853,14 @@ variables:
   is_presence_on: >
     {{ iif(is_person_based, state_presence_sensor_presence_scheduler_combined and is_anybody_home, state_presence_sensor_presence_scheduler_combined) }}
 
-  # Planner Configuration
+  # Scheduler Configuration
   is_scheduled_heating: "{{ active_scheduler != none }}"
   state_scheduler: "{{ is_scheduled_heating and is_state(active_scheduler,'on') }}"
 
   is_scheduled_heating_on: >
     {{ iif(is_person_based, state_scheduler and is_anybody_home, state_scheduler) }}
 
-  # Nabijheid
+  # Proximity
   is_somebody_on_way_home_state: >
     {% set proximity_entities = device_entities(input_proximity) %}
 
@@ -2940,4 +2940,3 @@ action:
         then: !input "input_custom_action"
 
 mode: queued
-
