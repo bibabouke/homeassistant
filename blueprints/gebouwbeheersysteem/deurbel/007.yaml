@@ -7,8 +7,8 @@ blueprint:
       name: Activeringsknop
       description: Selecteer de knop die de lamp aan of uit zet.
       selector:
-        device:
-          integration: deconz  # Kies de juiste integratie voor jouw knop (bv. Zigbee of Z-Wave)
+        entity:
+          domain: sensor  # Dit kan ook "button" zijn, afhankelijk van je integratie.
     lamp:
       name: Lamp
       description: Selecteer de lamp die in- of uitgeschakeld moet worden.
@@ -18,10 +18,9 @@ blueprint:
             domain: light
 
 trigger:
-  - platform: device
-    device_id: !input 'trigger_button'
-    domain: button
-    type: single_press  # Dit kan aangepast worden naar het juiste type knopdruk, afhankelijk van de knop
+  - platform: state
+    entity_id: !input 'trigger_button'
+    to: "on"  # Dit moet mogelijk worden aangepast aan de status van je knop, zoals "pressed" of "single_press"
 
 action:
   - service: light.toggle
