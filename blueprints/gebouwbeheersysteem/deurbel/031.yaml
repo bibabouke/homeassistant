@@ -1,0 +1,53 @@
+blueprint:
+  name: Lamp Schakelen met Kleur en Tijd
+  description: Schakelt een lamp op basis van een knop in een opgegeven kleur en schakelt deze na een opgegeven aantal seconden uit.
+  domain: automation
+  input:
+    activerings_knop:
+      name: Activeringsknop
+      description: Selecteer de knop die de lamp activeert.
+      selector:
+        entity:
+          domain: input_boolean
+    lamp:
+      name: Te schakelen lamp
+      description: Selecteer de lamp die geschakeld moet worden.
+      selector:
+        entity:
+          domain: light
+    kleur:
+      name: Kleur van de lamp
+      description: Selecteer de kleur waarin de lamp moet branden.
+      selector:
+        color_rgb: {}
+    tijdsduur:
+      name: Tijdsduur
+      description: Hoe lang moet de lamp branden? (in seconden)
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 3600
+          unit_of_measurement: seconds
+          mode: slider
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input activerings_knop
+    to: 'on'
+
+action:
+  - service: light.turn_on
+    target:
+      entity_id: !input lamp
+    data:
+      rgb_color: !input kleur
+  - delay:
+      seconds: !input tijdsduur
+  - service: light.turn_off
+    target:
+      entity_id: !input lamp
+
