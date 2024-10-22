@@ -1,0 +1,30 @@
+blueprint:
+  name: Lamp Schakelaar met Knop
+  description: Schakel een lamp aan of uit met een knop.
+  domain: automation
+  input:
+    trigger_button:
+      name: Activeringsknop
+      description: Selecteer de knop die de lamp aan of uit zet.
+      selector:
+        device:
+          integration: deconz  # Kies de juiste integratie voor jouw knop (bv. Zigbee of Z-Wave)
+    lamp:
+      name: Lamp
+      description: Selecteer de lamp die in- of uitgeschakeld moet worden.
+      selector:
+        target:
+          entity:
+            domain: light
+
+trigger:
+  - platform: device
+    device_id: !input 'trigger_button'
+    domain: button
+    type: single_press  # Dit kan aangepast worden naar het juiste type knopdruk, afhankelijk van de knop
+
+action:
+  - service: light.toggle
+    target: !input 'lamp'
+
+mode: single
