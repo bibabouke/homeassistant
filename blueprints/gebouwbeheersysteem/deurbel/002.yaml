@@ -1,0 +1,53 @@
+blueprint:
+  name: Lamp Kleur Verandering
+  description: Verander de kleur van geselecteerde lampen voor een aantal seconden en zet ze daarna terug naar hun originele staat.
+  domain: automation
+  input:
+    trigger_button:
+      name: Activeringsknop
+      description: Selecteer de knop of sensor die de actie triggert.
+      selector:
+        entity:
+          domain: button
+    lights:
+      name: Lampen
+      description: Selecteer de lampen die van kleur veranderen.
+      selector:
+        target:
+          entity:
+            domain: light
+    kleur:
+      name: Nieuwe kleur
+      description: Kies de kleur die de lampen moeten aannemen.
+      selector:
+        color_rgb: {}
+    duration:
+      name: Duur (seconden)
+      description: De tijd dat de lampen in de nieuwe kleur blijven.
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 300
+          unit_of_measurement: seconden
+
+triggers:
+  - platform: state
+    entity_id: !input 'trigger_button'
+    to: "on"
+
+action:
+  - variables:
+      original_states: "{{ expand(target_entities('!input lights')) | map(attribute='entity_id') | list }}"
+      
+  - service: light.turn_on
+    target: !input 'lights'
+    data:
+      rgb_color: !input 'kleur'
+
+  - delay: !input 'duration'
+
+  - service: light.turn_on
+    target: !input 'lights'
+    data_template:
+      state: "{{ original_states }}"
