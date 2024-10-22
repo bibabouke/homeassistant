@@ -1,0 +1,29 @@
+blueprint:
+  name: Lamp Schakelaar met Knop
+  description: Schakel een lamp aan of uit met een knop.
+  domain: automation
+  input:
+    trigger_button:
+      name: Activeringsknop
+      description: Selecteer de knop die de lamp aan of uit zet.
+      selector:
+        entity:
+          domain: sensor  # Dit kan ook "button" zijn, afhankelijk van je integratie.
+    lamp:
+      name: Lamp
+      description: Selecteer de lamp die in- of uitgeschakeld moet worden.
+      selector:
+        target:
+          entity:
+            domain: light
+
+trigger:
+  - platform: state
+    entity_id: !input 'trigger_button'
+    to: "on"  # Dit moet mogelijk worden aangepast aan de status van je knop, zoals "pressed" of "single_press"
+
+action:
+  - service: light.toggle
+    target: !input 'lamp'
+
+mode: single
