@@ -9,5 +9,5 @@ Zoek in de documentatie op homeassistant.io uit wat de laatste versie nu is en z
 Maak een zeer beknopte samenvatting zonder uitleg wat de verschillen zijn en leer jezelf de nieuwe methodes toe te passen.
 En sla die nieuwe kennis op. 
 
-
+Vertel me als je klaar bent.
 
