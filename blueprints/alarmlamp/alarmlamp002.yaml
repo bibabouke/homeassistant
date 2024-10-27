@@ -1,0 +1,71 @@
+#Versie alarmlamp 002
+blueprint:
+  name: Alarmlamp Automatisering met Status Opslag
+  description: "Schakel een lamp in of uit en sla de originele status op wanneer de knop wordt ingedrukt."
+  domain: automation
+  input:
+    knop_sensor:
+      name: Knop Sensor
+      description: "Selecteer de knop sensor."
+      selector:
+        entity:
+          domain: sensor
+    lamp_entity:
+      name: Lamp
+      description: "Selecteer de lamp die je wilt schakelen."
+      selector:
+        entity:
+          domain: light
+    active_status:
+      name: Status actief
+      description: "Geeft aan of het script al actief is"
+      selector:
+        entity:
+          domain: input_boolean
+    original_color:
+      name: Originele kleur
+      selector:
+        entity:
+          domain: input_text
+    original_brightness:
+      name: Originele helderheid
+      selector:
+        entity:
+          domain: input_number
+
+trigger:
+  - platform: state
+    entity_id: !input 'knop_sensor'
+    to: "on"
+
+condition:
+  - condition: state
+    entity_id: !input 'active_status'
+    state: 'off'
+
+action:
+  - service: input_boolean.turn_on
+    target:
+      entity_id: !input 'active_status'
+  - service: input_text.set_value
+    data:
+      entity_id: !input 'original_color'
+      value: "{{ state_attr(!input 'lamp_entity', 'color_name') }}"
+  - service: input_number.set_value
+    data:
+      entity_id: !input 'original_brightness'
+      value: "{{ state_attr(!input 'lamp_entity', 'brightness') }}"
+  - delay: "00:00:05"
+  - service: light.turn_on
+    data:
+      entity_id: !input 'lamp_entity'
+      color_name: "red"
+  - delay: "00:00:05"
+  - service: light.turn_on
+    data:
+      entity_id: !input 'lamp_entity'
+      color_name: "{{ states('input_text.original_color') }}"
+      brightness: "{{ states('input_number.original_brightness') }}"
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input 'active_status'
