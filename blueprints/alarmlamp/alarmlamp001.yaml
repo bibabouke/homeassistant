@@ -1,0 +1,32 @@
+#Versie alarmlamp 001
+blueprint:
+  name: Alarmlamp Automatisering
+  description: "Schakel een lamp in of uit en verander de kleur wanneer een knop wordt ingedrukt."
+  domain: automation
+  input:
+    knop_sensor:
+      name: Knop Sensor
+      description: "Selecteer de knop sensor."
+      selector:
+        entity:
+          domain: sensor
+    lamp_entity:
+      name: Lamp
+      description: "Selecteer de lamp die je wilt schakelen."
+      selector:
+        entity:
+          domain: light
+
+trigger:
+  - platform: state
+    entity_id: !input 'knop_sensor'
+    to: "on"
+
+action:
+  - service: light.toggle
+    target:
+      entity_id: !input 'lamp_entity'
+  - service: light.turn_on
+    data:
+      entity_id: !input 'lamp_entity'
+      color_name: "blue"
