@@ -17,18 +17,20 @@ blueprint:
         target:
           entity:
             domain: light
-    active_status:
-      name: Status Actief
-      description: "Geeft aan of het script al actief is"
-      selector:
-        entity:
-          domain: input_boolean
     status_storage:
-      name: Status Opslag
+      name: Alert Lampen Status
       description: "Slaat de status op van alle lampen."
+      default: input_text.alert_lampen_status
       selector:
         entity:
           domain: input_text
+    active_status:
+      name: Alert Lampen Script Actief
+      description: "Geeft aan of het script al actief is"
+      default: input_boolean.alert_lampen_script_actief
+      selector:
+        entity:
+          domain: input_boolean
 
 trigger:
   - platform: state
@@ -68,12 +70,12 @@ action:
           data:
             entity_id: "{{ repeat.item.entity_id }}"
             color_name: "red"
-  - delay: "00:00:10"  # Tijd voor de lampen om aan te staan
+  - delay: "00:00:10"
   - service: input_boolean.turn_off
     target:
       entity_id: !input 'active_status'
   - variables:
-      stored_data: "{{ states('input_text.lampen_status') | fromjson }}"
+      stored_data: "{{ states('input_text.alert_lampen_status') | fromjson }}"
   - repeat:
       count: "{{ (expand(!input 'lamp_entities') | length) }}"
       sequence:
