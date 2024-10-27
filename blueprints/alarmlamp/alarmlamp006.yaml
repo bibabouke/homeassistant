@@ -1,0 +1,92 @@
+#Versie alarmlamp 004
+blueprint:
+  name: Alarmlamp Automatisering met Dynamische Opslag
+  description: "Schakel meerdere lampen en sla de originele status van elke lamp op."
+  domain: automation
+  input:
+    knop_sensor:
+      name: Knop Sensor
+      description: "Selecteer de knop sensor."
+      selector:
+        entity:
+          domain: sensor
+    lamp_entities:
+      name: Lampen
+      description: "Selecteer één of meerdere lampen."
+      selector:
+        target:
+          entity:
+            domain: light
+    status_storage:
+      name: Alert Lampen Status
+      description: "Slaat de status op van alle lampen."
+      default: input_text.alert_lampen_status
+      selector:
+        entity:
+          domain: input_text
+    active_status:
+      name: Alert Lampen Script Actief
+      description: "Geeft aan of het script al actief is"
+      default: input_boolean.alert_lampen_script_actief
+      selector:
+        entity:
+          domain: input_boolean
+
+trigger:
+  - platform: state
+    entity_id: !input 'knop_sensor'
+    to: "on"
+
+condition:
+  - condition: state
+    entity_id: !input 'active_status'
+    state: 'off'
+
+action:
+  - service: input_boolean.turn_on
+    target:
+      entity_id: !input 'active_status'
+  - variables:
+      lampen: !input 'lamp_entities'
+      lamp_data: >
+        {% set data = {} %}
+        {% for lamp in expand(lampen) %}
+        {% set data = data.update({lamp.entity_id: {
+            "status": states(lamp.entity_id),
+            "kleur": state_attr(lamp.entity_id, "color_name") if state_attr(lamp.entity_id, "color_name") else "unknown",
+            "helderheid": state_attr(lamp.entity_id, "brightness") if state_attr(lamp.entity_id, "brightness") else 0,
+            "color_temp": state_attr(lamp.entity_id, "color_temp") if state_attr(lamp.entity_id, "color_temp") else "unknown"
+        }}) %}
+        {% endfor %}
+        {{ data }}
+  - service: input_text.set_value
+    data:
+      entity_id: !input 'status_storage'
+      value: "{{ lamp_data }}"
+  - delay: "00:00:05"
+  - repeat:
+      count: "{{ (expand(lampen) | length) }}"
+      sequence:
+        - service: light.turn_on
+          data:
+            entity_id: "{{ repeat.item.entity_id }}"
+            color_name: "red"
+  - delay: "00:00:10"
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input 'active_status'
+  - variables:
+      stored_data: "{{ states('input_text.alert_lampen_status') | from_json }}"
+  - repeat:
+      count: "{{ (expand(lampen) | length) }}"
+      sequence:
+        - service: light.turn_on
+          data:
+            entity_id: "{{ repeat.item.entity_id }}"
+            brightness: "{{ stored_data[repeat.item.entity_id].helderheid }}"
+            color_name: "{{ stored_data[repeat.item.entity_id].kleur }}"
+            color_temp: "{{ stored_data[repeat.item.entity_id].color_temp }}"
+  - delay: "00:00:05"
+  - service: input_boolean.turn_off
+    target:
+      entity_id: !input 'active_status'
