@@ -1,0 +1,37 @@
+blueprint:
+  name: Dynamische Scene Opslaan en Herstellen
+  description: Slaat de huidige status van lampen op, verandert de kleur naar rood, en herstelt de oorspronkelijke instellingen.
+  domain: automation
+  input:
+    trigger_entity:
+      name: Trigger Sensor/Schakelaar
+      description: Sensor of schakelaar die de actie triggert.
+      selector:
+        entity:
+          domain: binary_sensor
+    target_lights:
+      name: Lampen
+      description: Lampen die onderdeel zijn van de scene.
+      selector:
+        target:
+          entity:
+            domain: light
+
+trigger:
+  - platform: state
+    entity_id: !input trigger_entity
+
+action:
+  - service: scene.create
+    data:
+      scene_id: "dynamic_scene"
+      snapshot_entities: !input target_lights
+  - service: light.turn_on
+    data:
+      color_name: "red"
+      brightness: 255
+    target: !input target_lights
+  - delay: "00:00:02"
+  - service: scene.turn_on
+    target:
+      entity_id: scene.dynamic_scene
