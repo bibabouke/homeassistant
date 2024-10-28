@@ -1,0 +1,49 @@
+# Versie: scene012
+blueprint:
+  name: Scène Opslag met 4 Statische Lampen
+  description: "Maakt een snapshot van maximaal 4 geselecteerde lampen met een unieke tijd-ID."
+  domain: automation
+  input:
+    lamp1:
+      name: Lamp 1
+      description: Selecteer de eerste lamp.
+      selector:
+        entity:
+          domain: light
+    lamp2:
+      name: Lamp 2 (optioneel)
+      description: Selecteer de tweede lamp, indien nodig.
+      selector:
+        entity:
+          domain: light
+    lamp3:
+      name: Lamp 3 (optioneel)
+      description: Selecteer de derde lamp, indien nodig.
+      selector:
+        entity:
+          domain: light
+    lamp4:
+      name: Lamp 4 (optioneel)
+      description: Selecteer de vierde lamp, indien nodig.
+      selector:
+        entity:
+          domain: light
+
+mode: single
+
+trigger:
+  platform: event
+  event_type: scene_snapshot
+
+variables:
+  snapshot_entities:
+    - !input lamp1
+    - !input lamp2
+    - !input lamp3
+    - !input lamp4
+
+action:
+  - service: scene.create
+    data:
+      scene_id: "snapshot_{{ now().strftime('%Y%m%d%H%M%S') }}"
+      snapshot_entities: "{{ snapshot_entities | select('string') | list }}"
