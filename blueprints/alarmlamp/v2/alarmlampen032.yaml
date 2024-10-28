@@ -1,0 +1,94 @@
+#Versie: alarmlampen versie 0.32
+
+blueprint:
+  name: Alarmlampen
+  description: "Activeer lampen met een knop en stel kleur, intensiteit en tijdsduur in. Keert terug naar oorspronkelijke status na verloop van tijd."
+  domain: automation
+  input:
+    trigger_knop:
+      name: Trigger Knop
+      description: "Kies de knop die de lampen moet activeren."
+      selector:
+        entity:
+          domain: sensor
+
+    lampen_selectie:
+      name: Lampen Selectie
+      description: "Selecteer de lampen die moeten reageren."
+      selector:
+        target:
+          entity:
+            domain: light
+
+    lamp_kleur:
+      name: Lamp Kleur
+      description: "Kies de kleur voor de lampen."
+      selector:
+        color_rgb: {}
+
+    intensiteit:
+      name: Intensiteit
+      description: "Stel de intensiteit van de lampen in (1-100%)."
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    tijdsduur:
+      name: Tijdsduur (seconden)
+      description: "Stel in hoelang de lampen aan moeten blijven."
+      selector:
+        number:
+          min: 1
+          max: 3600
+          step: 1
+          unit_of_measurement: "seconden"
+
+trigger:
+  - platform: state
+    entity_id: !input trigger_knop
+
+variables:
+  lamp_status: >
+    {% set status = {} %}
+    {% for lamp in expand(!input lampen_selectie) %}
+      {% set status = status | merge({ lamp.entity_id: {
+          'state': lamp.state,
+          'brightness': lamp.attributes.brightness if lamp.state == 'on' else none,
+          'color': lamp.attributes.rgb_color if lamp.state == 'on' else none
+      }}) %}
+    {% endfor %}
+    {{ status }}
+
+action:
+  - service: light.turn_on
+    target: !input lampen_selectie
+    data:
+      rgb_color: !input lamp_kleur
+      brightness_pct: !input intensiteit
+
+  - delay:
+      seconds: !input tijdsduur
+
+  - repeat:
+      count: "{{ lamp_status | count }}"
+      sequence:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ lamp_status.values() | list | repeat.index0.state == 'on' }}"
+              sequence:
+                - service: light.turn_on
+                  target:
+                    entity_id: "{{ lamp_status.keys() | list | repeat.index0 }}"
+                  data:
+                    brightness: "{{ lamp_status.values() | list | repeat.index0.brightness }}"
+                    rgb_color: "{{ lamp_status.values() | list | repeat.index0.color }}"
+        - default:
+            - service: light.turn_off
+              target:
+                entity_id: "{{ lamp_status.keys() | list | repeat.index0 }}"
+
+mode: restart
