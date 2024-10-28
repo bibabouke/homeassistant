@@ -1,0 +1,76 @@
+#Versie: alarmlampen versie 0.22
+
+blueprint:
+  name: Alarmlampen
+  description: "Activeer lampen met een knop en stel kleur, intensiteit en tijdsduur in. Na de ingestelde tijd worden de lampen teruggezet naar hun oorspronkelijke status."
+  domain: automation
+  input:
+    trigger_knop:
+      name: Trigger Knop
+      description: "Kies de knop die de lampen moet activeren."
+      selector:
+        entity:
+          domain: sensor
+
+    lampen_selectie:
+      name: Lampen Selectie
+      description: "Selecteer de lampen die moeten reageren."
+      selector:
+        target:
+          entity:
+            domain: light
+
+    lamp_kleur:
+      name: Lamp Kleur
+      description: "Kies de kleur voor de lampen."
+      selector:
+        color_rgb: {}
+
+    intensiteit:
+      name: Intensiteit
+      description: "Stel de intensiteit van de lampen in (1-100%)."
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    tijdsduur:
+      name: Tijdsduur (seconden)
+      description: "Stel in hoelang de lampen aan moeten blijven."
+      selector:
+        number:
+          min: 1
+          max: 3600
+          step: 1
+          unit_of_measurement: "seconden"
+
+trigger:
+  - platform: state
+    entity_id: !input trigger_knop
+
+action:
+  # Stap 1: Maak een scene aan om de huidige status van de lampen op te slaan
+  - service: scene.create
+    data:
+      scene_id: "huidige_lamp_status"
+      snapshot_entities: !input lampen_selectie
+
+  # Stap 2: Zet de lampen aan met de ingestelde kleur en intensiteit
+  - service: light.turn_on
+    target: !input lampen_selectie
+    data:
+      rgb_color: !input lamp_kleur
+      brightness_pct: !input intensiteit
+
+  # Stap 3: Wacht voor de opgegeven tijdsduur
+  - delay:
+      seconds: !input tijdsduur
+
+  # Stap 4: Zet de lampen terug naar hun oorspronkelijke status
+  - service: scene.turn_on
+    data:
+      entity_id: "scene.huidige_lamp_status"
+
+mode: restart
