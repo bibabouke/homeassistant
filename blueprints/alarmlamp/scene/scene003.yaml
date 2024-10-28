@@ -1,0 +1,25 @@
+# Versie: scene003
+blueprint:
+  name: Test Scène Opslag Lampen - Unieke Tijd-ID
+  description: "Maakt een snapshot van de geselecteerde lampen met een unieke ID op basis van tijd."
+  domain: automation
+  input:
+    target_lights:
+      name: Te selecteren lampen
+      description: Selecteer de lampen waarvan je de status wilt opslaan.
+      selector:
+        target:
+          entity:
+            domain: light
+
+mode: single
+
+trigger:
+  platform: event
+  event_type: scene_snapshot
+
+action:
+  - service: scene.create
+    data:
+      scene_id: "snapshot_{{ now().strftime('%Y%m%d%H%M%S') }}"
+      snapshot_entities: "{{ input.target_lights.entity_id | join(', ') }}"
