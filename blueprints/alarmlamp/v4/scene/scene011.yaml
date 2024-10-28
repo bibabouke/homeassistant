@@ -1,0 +1,28 @@
+# Versie: scene011
+blueprint:
+  name: Scène Opslag met Volledige Status van Lampen
+  description: "Maakt een snapshot van geselecteerde lampen met een unieke tijd-ID."
+  domain: automation
+  input:
+    target_lights:
+      name: Te selecteren lampen
+      description: Selecteer de lampen waarvan je de volledige status wilt opslaan.
+      selector:
+        entity:
+          domain: light
+          multiple: true  # Sta selectie van meerdere lampen toe
+
+mode: single
+
+trigger:
+  platform: event
+  event_type: scene_snapshot
+
+variables:
+  snapshot_entities_list: "{{ expand(target_lights) | map(attribute='entity_id') | list }}"
+
+action:
+  - service: scene.create
+    data:
+      scene_id: "snapshot_{{ now().strftime('%Y%m%d%H%M%S') }}"
+      snapshot_entities: "{{ snapshot_entities_list }}"
